@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fundamentos de Python para Ciberseguridad</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-okaidia.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <header>
+        <div>Fundamentos de Python para Ciberseguridad</div>
+    </header>
+    <section class="contenido-didactico">
+        <h1>BLOQUE 2: Strings y Entrada/Salida</h1>
+
+        <h2>Práctica Guiada: Validador de Direcciones IP</h2>
+        <pre><code class="language-python">#!/usr/bin/env python3
+"""
+Práctica: Validador básico de direcciones IP
+Este script demuestra manipulación de strings y conversión de tipos
+"""
+
+print("=" * 50)
+print("   VALIDADOR DE DIRECCIONES IP")
+print("=" * 50)
+
+# Solicitar entrada
+ip = input("\nIntroduce una dirección IP: ").strip()
+
+# Verificar que no esté vacía
+if len(ip) == 0:
+    print("[ERROR] No has introducido ninguna dirección")
+else:
+    # Dividir por puntos
+    octetos = ip.split(".")
+    
+    # Verificar que hay exactamente 4 octetos
+    if len(octetos) != 4:
+        print(f"[ERROR] Una IP debe tener 4 octetos, encontrados: {len(octetos)}")
+    else:
+        # Verificar cada octeto
+        ip_valida = True
+        for i, octeto in enumerate(octetos):
+            # Verificar que es un número
+            if not octeto.isdigit():
+                print(f"[ERROR] El octeto {i+1} ('{octeto}') no es un número válido")
+                ip_valida = False
+                break
+            
+            # Convertir a entero y verificar rango
+            valor = int(octeto)
+            if valor < 0 or valor > 255:
+                print(f"[ERROR] El octeto {i+1} ({valor}) está fuera del rango 0-255")
+                ip_valida = False
+                break
+        
+        if ip_valida:
+            print(f"\n[OK] La dirección {ip} es válida")
+            
+            # Información adicional
+            primer_octeto = int(octetos[0])
+            if primer_octeto < 128:
+                clase = "A"
+            elif primer_octeto < 192:
+                clase = "B"
+            elif primer_octeto < 224:
+                clase = "C"
+            else:
+                clase = "D/E (Multicast o Reservada)"
+            
+            print(f"    Clase: {clase}")
+            
+            # Detectar IPs especiales
+            if ip.startswith("192.168.") or ip.startswith("10."):
+                print("    Tipo: Red privada")
+            elif ip.startswith("127."):
+                print("    Tipo: Loopback")
+            elif ip == "0.0.0.0":
+                print("    Tipo: Cualquier interfaz")
+            elif ip == "255.255.255.255":
+                print("    Tipo: Broadcast")
+
+print("\n" + "=" * 50)</code></pre>
+    </section>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script
+        src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>

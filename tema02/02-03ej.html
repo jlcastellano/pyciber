@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control de Flujo y Funciones</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-okaidia.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <header>
+        <div>Control de Flujo y Funciones</div>
+    </header>
+
+    <section class="contenido-didactico">
+        <h1>BLOQUE 3: Funciones</h1>
+        <h2>3.4 Práctica: Biblioteca de Funciones de Seguridad</h2>
+
+        <pre><code class="language-python">#!/usr/bin/env python3
+"""
+Biblioteca de funciones de utilidad para ciberseguridad
+Módulo: security_utils.py
+"""
+
+def validar_ip(ip):
+    """
+    Valida si una cadena es una dirección IPv4 válida.
+    
+    Args:
+        ip (str): Dirección IP a validar.
+    
+    Returns:
+        bool: True si es válida, False si no.
+    """
+    if not isinstance(ip, str):
+        return False
+    
+    octetos = ip.split(".")
+    
+    if len(octetos) != 4:
+        return False
+    
+    for octeto in octetos:
+        if not octeto.isdigit():
+            return False
+        valor = int(octeto)
+        if valor < 0 or valor > 255:
+            return False
+    
+    return True
+
+
+def validar_puerto(puerto):
+    """
+    Valida si un valor es un número de puerto válido.
+    
+    Args:
+        puerto: Valor a validar (puede ser int o str).
+    
+    Returns:
+        tuple: (es_valido, puerto_int, mensaje)
+    """
+    try:
+        puerto_int = int(puerto)
+        if 1 <= puerto_int <= 65535:
+            tipo = "privilegiado" if puerto_int < 1024 else "no privilegiado"
+            return (True, puerto_int, f"Puerto {tipo}")
+        else:
+            return (False, None, "Puerto fuera de rango (1-65535)")
+    except (ValueError, TypeError):
+        return (False, None, "No es un número válido")
+
+
+def clasificar_ip(ip):
+    """
+    Clasifica una IP según su tipo y clase.
+    
+    Args:
+        ip (str): Dirección IP a clasificar.
+    
+    Returns:
+        dict: Diccionario con información de clasificación.
+    """
+    if not validar_ip(ip):
+        return {"error": "IP no válida"}
+    
+    octetos = [int(x) for x in ip.split(".")]
+    primer_octeto = octetos[0]
+    
+    resultado = {
+        "ip": ip,
+        "clase": None,
+        "tipo": None,
+        "uso": None
+    }
+    
+    # Determinar clase
+    if primer_octeto < 128:
+        resultado["clase"] = "A"
+    elif primer_octeto < 192:
+        resultado["clase"] = "B"
+    elif primer_octeto < 224:
+        resultado["clase"] = "C"
+    elif primer_octeto < 240:
+        resultado["clase"] = "D"
+    else:
+        resultado["clase"] = "E"
+    
+    # Determinar tipo
+    if ip == "127.0.0.1" or ip.startswith("127."):
+        resultado["tipo"] = "Loopback"
+        resultado["uso"] = "Referencia al propio host"
+    elif ip.startswith("10."):
+        resultado["tipo"] = "Privada"
+        resultado["uso"] = "Red privada clase A"
+    elif ip.startswith("172.") and 16 <= octetos[1] <= 31:
+        resultado["tipo"] = "Privada"
+        resultado["uso"] = "Red privada clase B"
+    elif ip.startswith("192.168."):
+        resultado["tipo"] = "Privada"
+        resultado["uso"] = "Red privada clase C"
+    elif ip.startswith("169.254."):
+        resultado["tipo"] = "Link-local"
+        resultado["uso"] = "Autoconfiguración APIPA"
+    elif primer_octeto >= 224 and primer_octeto <= 239:
+        resultado["tipo"] = "Multicast"
+        resultado["uso"] = "Comunicación multicast"
+    else:
+        resultado["tipo"] = "Pública"
+        resultado["uso"] = "Dirección enrutable en Internet"
+    
+    return resultado
+
+
+def generar_rango_ips(ip_base, inicio=1, fin=254):
+    """
+    Genera un rango de direcciones IP.
+    
+    Args:
+        ip_base (str): IP base (ej: "192.168.1.0")
+        inicio (int): Primer valor del último octeto
+        fin (int): Último valor del último octeto
+    
+    Returns:
+        list: Lista de IPs generadas
+    """
+    if not validar_ip(ip_base):
+        return []
+    
+    octetos = ip_base.split(".")
+    base = ".".join(octetos[:3])
+    
+    return [f"{base}.{i}" for i in range(inicio, fin + 1)]
+
+
+def analizar_resultados_escaneo(resultados):
+    """
+    Analiza los resultados de un escaneo y genera estadísticas.
+    
+    Args:
+        resultados (dict): Diccionario con IP como clave y lista de puertos abiertos como valor
+    
+    Returns:
+        dict: Estadísticas del escaneo
+    """
+    estadisticas = {
+        "total_hosts": len(resultados),
+        "hosts_con_puertos": 0,
+        "total_puertos_abiertos": 0,
+        "puerto_mas_comun": None,
+        "puertos_por_frecuencia": {}
+    }
+    
+    conteo_puertos = {}
+    
+    for ip, puertos in resultados.items():
+        if puertos:
+            estadisticas["hosts_con_puertos"] += 1
+            estadisticas["total_puertos_abiertos"] += len(puertos)
+            
+            for puerto in puertos:
+                conteo_puertos[puerto] = conteo_puertos.get(puerto, 0) + 1
+    
+    if conteo_puertos:
+        estadisticas["puerto_mas_comun"] = max(conteo_puertos, key=conteo_puertos.get)
+        estadisticas["puertos_por_frecuencia"] = dict(
+            sorted(conteo_puertos.items(), key=lambda x: x[1], reverse=True)
+        )
+    
+    return estadisticas
+
+
+# ============================================
+# DEMOSTRACIÓN DE USO
+# ============================================
+
+if __name__ == "__main__":
+    print("=" * 60)
+    print("   DEMOSTRACIÓN DE SECURITY_UTILS")
+    print("=" * 60)
+    
+    # Test validar_ip
+    print("\n[*] Test validar_ip:")
+    ips_test = ["192.168.1.1", "256.1.1.1", "10.0.0.1", "abc"]
+    for ip in ips_test:
+        resultado = validar_ip(ip)
+        print(f"    {ip}: {'✓' if resultado else '✗'}")
+    
+    # Test validar_puerto
+    print("\n[*] Test validar_puerto:")
+    puertos_test = [22, 80, 70000, "443", "abc"]
+    for puerto in puertos_test:
+        valido, valor, msg = validar_puerto(puerto)
+        print(f"    {puerto}: {msg}")
+    
+    # Test clasificar_ip
+    print("\n[*] Test clasificar_ip:")
+    for ip in ["192.168.1.1", "8.8.8.8", "127.0.0.1", "10.0.0.50"]:
+        info = clasificar_ip(ip)
+        print(f"    {ip}: Clase {info['clase']}, {info['tipo']}")
+    
+    # Test generar_rango_ips
+    print("\n[*] Test generar_rango_ips:")
+    rango = generar_rango_ips("192.168.1.0", 1, 5)
+    print(f"    Generadas: {rango}")
+    
+    # Test analizar_resultados_escaneo
+    print("\n[*] Test analizar_resultados_escaneo:")
+    resultados_ejemplo = {
+        "192.168.1.1": [22, 80],
+        "192.168.1.2": [80, 443],
+        "192.168.1.3": [22, 80, 443],
+        "192.168.1.4": []
+    }
+    stats = analizar_resultados_escaneo(resultados_ejemplo)
+    print(f"    Hosts analizados: {stats['total_hosts']}")
+    print(f"    Hosts con puertos: {stats['hosts_con_puertos']}")
+    print(f"    Puerto más común: {stats['puerto_mas_comun']}")
+    
+    print("\n" + "=" * 60)</code></pre>
+
+        <h1>RESUMEN DE LA SESIÓN 2</h1>
+
+        <h2>Conceptos Cubiertos</h2>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Tema</th>
+                    <th>Descripción</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Condicionales</td>
+                    <td>if, elif, else, operador ternario</td>
+                </tr>
+                <tr>
+                    <td>Valores Truthy/Falsy</td>
+                    <td>Evaluación booleana implícita</td>
+                </tr>
+                <tr>
+                    <td>Bucle for</td>
+                    <td>Iteración sobre secuencias, range(), enumerate(), zip()</td>
+                </tr>
+                <tr>
+                    <td>Bucle while</td>
+                    <td>Ejecución basada en condición</td>
+                </tr>
+                <tr>
+                    <td>Control de bucles</td>
+                    <td>break, continue, else en bucles</td>
+                </tr>
+                <tr>
+                    <td>List comprehensions</td>
+                    <td>Creación concisa de listas</td>
+                </tr>
+                <tr>
+                    <td>Funciones</td>
+                    <td>Definición, parámetros, retorno</td>
+                </tr>
+                <tr>
+                    <td>Parámetros</td>
+                    <td>Por defecto, *args, **kwargs</td>
+                </tr>
+                <tr>
+                    <td>Scope</td>
+                    <td>Variables locales, globales, anidadas</td>
+                </tr>
+                <tr>
+                    <td>Docstrings</td>
+                    <td>Documentación de funciones</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2>Ejercicios para Practicar (Antes de la Sesión 3)</h2>
+
+        <ol>
+            <li><strong>Calculadora de subredes</strong>: Crea funciones para calcular la máscara de red, dirección de
+                broadcast y número de hosts disponibles dada una IP y un prefijo CIDR.</li>
+            <li><strong>Generador de contraseñas</strong>: Implementa una función que genere contraseñas aleatorias con
+                parámetros configurables (longitud, incluir mayúsculas, números, símbolos).</li>
+            <li><strong>Validador de emails</strong>: Crea una función que valide direcciones de email usando solo lo
+                aprendido (sin regex por ahora).</li>
+            <li><strong>Analizador de logs</strong>: Escribe funciones para leer una lista de strings simulando logs y
+                extraer estadísticas (IPs más frecuentes, códigos de error, etc.).</li>
+            <li><strong>Mini escáner mejorado</strong>: Expande el escáner de la práctica para incluir detección de
+                servicios, guardado de resultados y opciones de verbose.</li>
+        </ol>
+
+        <h2>CÓDIGO COMPLETO DE LA SESIÓN</h2>
+
+        <pre><code class="language-python">#!/usr/bin/env python3
+"""
+SESIÓN 2 - EJERCICIO INTEGRADOR COMPLETO
+Sistema de reconocimiento básico
+"""
+
+import random
+
+# ============================================
+# FUNCIONES DE UTILIDAD
+# ============================================
+
+def banner():
+    """Muestra el banner de la aplicación."""
+    print("""
+╔══════════════════════════════════════════════════════════╗
+║          RECON TOOL - Herramienta de Reconocimiento      ║
+║                      Sesión 2 - Práctica                 ║
+╚══════════════════════════════════════════════════════════╝
+    """)
+
+
+def validar_ip(ip):
+    """Valida una dirección IP."""
+    octetos = ip.split(".")
+    if len(octetos) != 4:
+        return False
+    for octeto in octetos:
+        if not octeto.isdigit():
+            return False
+        if not 0 <= int(octeto) <= 255:
+            return False
+    return True
+
+
+def obtener_servicio(puerto):
+    """Retorna el nombre del servicio para un puerto."""
+    servicios = {
+        21: "FTP", 22: "SSH", 23: "Telnet", 25: "SMTP",
+        53: "DNS", 80: "HTTP", 110: "POP3", 143: "IMAP",
+        443: "HTTPS", 445: "SMB", 3306: "MySQL", 3389: "RDP",
+        5432: "PostgreSQL", 8080: "HTTP-Proxy", 8443: "HTTPS-Alt"
+    }
+    return servicios.get(puerto, "unknown")
+
+
+def escanear_puerto(ip, puerto, verbose=False):
+    """
+    Simula el escaneo de un puerto.
+    
+    Returns:
+        str: "abierto", "cerrado" o "filtrado"
+    """
+    # Simulación: algunos puertos más probables de estar abiertos
+    if puerto in [22, 80, 443]:
+        probabilidad_abierto = 0.4
+    else:
+        probabilidad_abierto = 0.1
+    
+    rand = random.random()
+    if rand < probabilidad_abierto:
+        estado = "abierto"
+    elif rand < 0.95:
+        estado = "cerrado"
+    else:
+        estado = "filtrado"
+    
+    if verbose:
+        print(f"  [DEBUG] {ip}:{puerto} -> {estado}")
+    
+    return estado
+
+
+def escanear_objetivo(ip, puertos, verbose=False):
+    """
+    Escanea múltiples puertos en un objetivo.
+    
+    Returns:
+        dict: Resultados del escaneo
+    """
+    resultados = {
+        "ip": ip,
+        "puertos_abiertos": [],
+        "puertos_cerrados": [],
+        "puertos_filtrados": []
+    }
+    
+    for puerto in puertos:
+        estado = escanear_puerto(ip, puerto, verbose)
+        
+        if estado == "abierto":
+            resultados["puertos_abiertos"].append(puerto)
+        elif estado == "filtrado":
+            resultados["puertos_filtrados"].append(puerto)
+        else:
+            resultados["puertos_cerrados"].append(puerto)
+    
+    return resultados
+
+
+def mostrar_resultados(resultados):
+    """Muestra los resultados de forma formateada."""
+    ip = resultados["ip"]
+    abiertos = resultados["puertos_abiertos"]
+    filtrados = resultados["puertos_filtrados"]
+    
+    print(f"\n{'─' * 50}")
+    print(f"Resultados para {ip}")
+    print(f"{'─' * 50}")
+    
+    if abiertos:
+        print("\n  Puertos abiertos:")
+        for puerto in sorted(abiertos):
+            servicio = obtener_servicio(puerto)
+            print(f"    {puerto}/tcp    abierto    {servicio}")
+    else:
+        print("\n  No se encontraron puertos abiertos")
+    
+    if filtrados:
+        print(f"\n  Puertos filtrados: {filtrados}")
+    
+    total_escaneados = len(abiertos) + len(resultados["puertos_cerrados"]) + len(filtrados)
+    print(f"\n  Resumen: {len(abiertos)} abiertos, {len(filtrados)} filtrados de {total_escaneados} escaneados")
+
+
+def menu_principal():
+    """Muestra el menú principal y retorna la opción."""
+    print("\n┌─────────────────────────────────┐")
+    print("│         MENÚ PRINCIPAL          │")
+    print("├─────────────────────────────────┤")
+    print("│  1. Escaneo rápido              │")
+    print("│  2. Escaneo completo            │")
+    print("│  3. Escaneo personalizado       │")
+    print("│  4. Información de IP           │")
+    print("│  0. Salir                       │")
+    print("└─────────────────────────────────┘")
+    
+    return input("\nSelecciona opción: ").strip()
+
+
+# ============================================
+# PROGRAMA PRINCIPAL
+# ============================================
+
+def main():
+    """Función principal del programa."""
+    banner()
+    
+    while True:
+        opcion = menu_principal()
+        
+        if opcion == "0":
+            print("\n[*] ¡Hasta pronto!")
+            break
+        
+        elif opcion == "1":
+            # Escaneo rápido
+            ip = input("\nIP objetivo: ").strip()
+            if not validar_ip(ip):
+                print("[!] IP no válida")
+                continue
+            
+            puertos = [21, 22, 80, 443, 3306, 8080]
+            print(f"\n[*] Iniciando escaneo rápido de {ip}...")
+            resultados = escanear_objetivo(ip, puertos)
+            mostrar_resultados(resultados)
+        
+        elif opcion == "2":
+            # Escaneo completo
+            ip = input("\nIP objetivo: ").strip()
+            if not validar_ip(ip):
+                print("[!] IP no válida")
+                continue
+            
+            puertos = list(range(1, 1025))
+            print(f"\n[*] Iniciando escaneo completo de {ip}...")
+            print("[*] Esto puede tardar un momento...")
+            resultados = escanear_objetivo(ip, puertos)
+            mostrar_resultados(resultados)
+        
+        elif opcion == "3":
+            # Escaneo personalizado
+            ip = input("\nIP objetivo: ").strip()
+            if not validar_ip(ip):
+                print("[!] IP no válida")
+                continue
+            
+            rango = input("Rango de puertos (ej: 1-100): ").strip()
+            try:
+                inicio, fin = map(int, rango.split("-"))
+                if inicio < 1 or fin > 65535 or inicio > fin:
+                    raise ValueError
+                puertos = list(range(inicio, fin + 1))
+            except ValueError:
+                print("[!] Rango no válido")
+                continue
+            
+            verbose = input("¿Modo verbose? (s/n): ").strip().lower() == "s"
+            
+            print(f"\n[*] Escaneando {ip} puertos {inicio}-{fin}...")
+            resultados = escanear_objetivo(ip, puertos, verbose)
+            mostrar_resultados(resultados)
+        
+        elif opcion == "4":
+            # Información de IP
+            ip = input("\nIP a analizar: ").strip()
+            if not validar_ip(ip):
+                print("[!] IP no válida")
+                continue
+            
+            octetos = ip.split(".")
+            primer_octeto = int(octetos[0])
+            
+            print(f"\n{'─' * 40}")
+            print(f"Información de {ip}")
+            print(f"{'─' * 40}")
+            
+            # Clase
+            if primer_octeto < 128:
+                clase = "A"
+            elif primer_octeto < 192:
+                clase = "B"
+            elif primer_octeto < 224:
+                clase = "C"
+            else:
+                clase = "D/E"
+            print(f"  Clase: {clase}")
+            
+            # Tipo
+            if ip.startswith("192.168.") or ip.startswith("10."):
+                print("  Tipo: Privada")
+            elif ip.startswith("127."):
+                print("  Tipo: Loopback")
+            else:
+                print("  Tipo: Pública")
+            
+            # Representación
+            print(f"  Binario (1er octeto): {bin(primer_octeto)}")
+            print(f"  Hex: {'.'.join(hex(int(o))[2:] for o in octetos)}")
+        
+        else:
+            print("[!] Opción no válida")
+
+
+# Punto de entrada
+if __name__ == "__main__":
+    main()</code></pre>
+    </section>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script
+        src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>

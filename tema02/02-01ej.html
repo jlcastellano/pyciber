@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control de Flujo y Funciones</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-okaidia.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <header>
+        <div>Control de Flujo y Funciones</div>
+    </header>
+
+    <section class="contenido-didactico">
+        <h1>BLOQUE 1: Estructuras Condicionales</h1>
+
+        <h2>Práctica: Clasificador de Puertos</h2>
+
+        <pre><code class="language-python">#!/usr/bin/env python3
+"""
+Práctica: Clasificador de puertos de red
+Aplica condicionales para analizar y clasificar puertos
+"""
+
+print("=" * 60)
+print("   CLASIFICADOR DE PUERTOS DE RED")
+print("=" * 60)
+
+# Diccionario de servicios conocidos
+servicios_conocidos = {
+    20: ("FTP-DATA", "Transferencia de archivos"),
+    21: ("FTP", "Control de transferencia de archivos"),
+    22: ("SSH", "Secure Shell - Acceso remoto seguro"),
+    23: ("Telnet", "Acceso remoto NO seguro"),
+    25: ("SMTP", "Envío de correo electrónico"),
+    53: ("DNS", "Resolución de nombres de dominio"),
+    80: ("HTTP", "Servidor web"),
+    110: ("POP3", "Recepción de correo"),
+    143: ("IMAP", "Acceso a correo"),
+    443: ("HTTPS", "Servidor web seguro"),
+    445: ("SMB", "Compartición de archivos Windows"),
+    3306: ("MySQL", "Base de datos MySQL"),
+    3389: ("RDP", "Escritorio remoto Windows"),
+    5432: ("PostgreSQL", "Base de datos PostgreSQL"),
+    8080: ("HTTP-Proxy", "Proxy HTTP / Servidor alternativo")
+}
+
+# Puertos considerados de alto riesgo si están abiertos
+puertos_riesgo = [21, 23, 445, 3389]
+
+# Solicitar puerto
+entrada = input("\nIntroduce un número de puerto (1-65535): ").strip()
+
+# Validar entrada
+if not entrada:
+    print("\n[!] No se introdujo ningún valor")
+elif not entrada.isdigit():
+    print("\n[!] Debe introducir un número válido")
+else:
+    puerto = int(entrada)
+    
+    # Validar rango
+    if puerto < 1 or puerto > 65535:
+        print(f"\n[!] Puerto fuera de rango válido (1-65535)")
+    else:
+        print(f"\n{'─' * 60}")
+        print(f"ANÁLISIS DEL PUERTO {puerto}")
+        print(f"{'─' * 60}")
+        
+        # Clasificar por rango
+        if puerto < 1024:
+            categoria = "Puerto privilegiado (Well-Known)"
+            nota = "Requiere permisos de root/admin para abrir"
+        elif puerto < 49152:
+            categoria = "Puerto registrado (Registered)"
+            nota = "Usado por aplicaciones específicas"
+        else:
+            categoria = "Puerto dinámico/privado (Dynamic)"
+            nota = "Usado para conexiones temporales"
+        
+        print(f"\n[*] Categoría: {categoria}")
+        print(f"    Nota: {nota}")
+        
+        # Buscar servicio conocido
+        if puerto in servicios_conocidos:
+            servicio, descripcion = servicios_conocidos[puerto]
+            print(f"\n[+] Servicio conocido: {servicio}")
+            print(f"    Descripción: {descripcion}")
+        else:
+            print(f"\n[?] Servicio: No identificado en base de datos local")
+        
+        # Evaluar riesgo
+        print(f"\n[*] Evaluación de seguridad:")
+        
+        if puerto in puertos_riesgo:
+            print(f"      ATENCIÓN: Este puerto es considerado de ALTO RIESGO")
+            
+            if puerto == 21:
+                print("    → FTP transmite credenciales en texto plano")
+            elif puerto == 23:
+                print("    → Telnet no usa cifrado, todo el tráfico es visible")
+            elif puerto == 445:
+                print("    → SMB ha sido vector de múltiples ataques (WannaCry, EternalBlue)")
+            elif puerto == 3389:
+                print("    → RDP es objetivo frecuente de ataques de fuerza bruta")
+        
+        elif puerto == 22:
+            print("    ✓ SSH es seguro, pero verificar configuración")
+            print("    → Recomendado: desactivar autenticación por password")
+        
+        elif puerto == 80:
+            print("    ⚠ HTTP no usa cifrado")
+            print("    → Recomendado: redirigir a HTTPS (443)")
+        
+        elif puerto == 443:
+            print("    ✓ HTTPS usa cifrado TLS/SSL")
+            print("    → Verificar: versión TLS y certificado válido")
+        
+        elif puerto >= 1024 and puerto <= 49151:
+            print("    → Puerto registrado, verificar qué servicio lo usa")
+        
+        else:
+            print("    → Puerto dinámico, generalmente seguro")
+
+print(f"\n{'=' * 60}")</code></pre>
+
+    </section>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script
+        src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>

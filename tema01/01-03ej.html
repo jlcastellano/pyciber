@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fundamentos de Python para Ciberseguridad</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-okaidia.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <header>
+        <div>Fundamentos de Python para Ciberseguridad</div>
+    </header>
+    <section class="contenido-didactico">
+        <h1>BLOQUE 3: Estructuras de Datos I</h1>
+        <h2>Práctica Guiada: Sistema de Credenciales</h2>
+        <pre><code class="language-python">#!/usr/bin/env python3
+"""
+Práctica Final Sesión 1: Sistema de gestión de credenciales simulado
+Integra todos los conceptos vistos: strings, listas, diccionarios, entrada/salida
+"""
+
+print("=" * 60)
+print("   SISTEMA DE GESTIÓN DE CREDENCIALES - Modo Práctica")
+print("=" * 60)
+
+# Base de datos de usuarios (diccionario de diccionarios)
+usuarios_db = {
+    "admin": {
+        "password": "admin123",
+        "rol": "administrador",
+        "intentos_fallidos": 0,
+        "bloqueado": False
+    },
+    "user1": {
+        "password": "password1",
+        "rol": "usuario",
+        "intentos_fallidos": 0,
+        "bloqueado": False
+    },
+    "guest": {
+        "password": "guest",
+        "rol": "invitado",
+        "intentos_fallidos": 2,
+        "bloqueado": False
+    }
+}
+
+# Lista para registrar intentos de acceso
+log_accesos = []
+
+# Constantes
+MAX_INTENTOS = 3
+
+print("\n[*] Base de datos cargada")
+print(f"[*] Usuarios registrados: {len(usuarios_db)}")
+print(f"[*] Lista de usuarios: {', '.join(usuarios_db.keys())}")
+
+# Simular intento de login
+print("\n" + "-" * 60)
+print("SIMULACIÓN DE LOGIN")
+print("-" * 60)
+
+usuario_input = input("\nUsuario: ").strip().lower()
+password_input = input("Contraseña: ").strip()
+
+# Verificar si el usuario existe
+if usuario_input not in usuarios_db:
+    print("\n[!] Usuario no encontrado")
+    log_accesos.append({
+        "usuario": usuario_input,
+        "resultado": "usuario_no_existe",
+        "ip_origen": "127.0.0.1"
+    })
+else:
+    usuario_data = usuarios_db[usuario_input]
+    
+    # Verificar si está bloqueado
+    if usuario_data["bloqueado"]:
+        print("\n[!] Cuenta bloqueada. Contacte al administrador.")
+        log_accesos.append({
+            "usuario": usuario_input,
+            "resultado": "cuenta_bloqueada",
+            "ip_origen": "127.0.0.1"
+        })
+    else:
+        # Verificar contraseña
+        if password_input == usuario_data["password"]:
+            print(f"\n[+] ¡Acceso concedido!")
+            print(f"[+] Bienvenido, {usuario_input}")
+            print(f"[+] Rol: {usuario_data['rol']}")
+            
+            # Resetear intentos fallidos
+            usuarios_db[usuario_input]["intentos_fallidos"] = 0
+            
+            log_accesos.append({
+                "usuario": usuario_input,
+                "resultado": "acceso_concedido",
+                "ip_origen": "127.0.0.1"
+            })
+        else:
+            # Incrementar intentos fallidos
+            usuarios_db[usuario_input]["intentos_fallidos"] += 1
+            intentos = usuarios_db[usuario_input]["intentos_fallidos"]
+            
+            print(f"\n[-] Contraseña incorrecta")
+            print(f"[-] Intento {intentos} de {MAX_INTENTOS}")
+            
+            if intentos >= MAX_INTENTOS:
+                usuarios_db[usuario_input]["bloqueado"] = True
+                print("[!] Cuenta bloqueada por exceso de intentos")
+            
+            log_accesos.append({
+                "usuario": usuario_input,
+                "resultado": "password_incorrecta",
+                "ip_origen": "127.0.0.1"
+            })
+
+# Mostrar log de accesos
+print("\n" + "-" * 60)
+print("LOG DE ACCESOS")
+print("-" * 60)
+
+for i, entrada in enumerate(log_accesos, 1):
+    print(f"{i}. Usuario: {entrada['usuario']:10} | "
+          f"Resultado: {entrada['resultado']:20} | "
+          f"IP: {entrada['ip_origen']}")
+
+# Mostrar estado final de la base de datos
+print("\n" + "-" * 60)
+print("ESTADO FINAL DE USUARIOS")
+print("-" * 60)
+
+for nombre, datos in usuarios_db.items():
+    estado = "BLOQUEADO" if datos["bloqueado"] else "Activo"
+    print(f"  {nombre:10} | Rol: {datos['rol']:15} | "
+          f"Intentos fallidos: {datos['intentos_fallidos']} | Estado: {estado}")
+
+print("\n" + "=" * 60)</code></pre>
+    </section>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script
+        src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>

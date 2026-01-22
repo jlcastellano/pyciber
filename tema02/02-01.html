@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control de Flujo y Funciones</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-okaidia.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <header>
+        <div>Control de Flujo y Funciones</div>
+    </header>
+
+    <section class="contenido-didactico">
+        <h1>BLOQUE 1: Estructuras Condicionales</h1>
+
+        <h2>1.1 Condicional if-elif-else</h2>
+
+        <p>Las estructuras condicionales permiten que nuestros scripts tomen decisiones. En ciberseguridad, las usamos
+            constantemente para evaluar resultados de escaneos, validar entradas, clasificar amenazas y determinar
+            acciones según el contexto.</p>
+
+        <h3>Sintaxis Básica</h3>
+
+        <pre><code class="language-python">#!/usr/bin/env python3
+"""
+Estructuras condicionales básicas
+"""
+
+# Estructura básica if
+puerto = 22
+
+if puerto == 22:
+    print("Servicio SSH detectado")
+
+# Estructura if-else
+estado = "abierto"
+
+if estado == "abierto":
+    print("[+] Puerto accesible")
+else:
+    print("[-] Puerto no accesible")
+
+# Estructura if-elif-else completa
+codigo_respuesta = 403
+
+if codigo_respuesta == 200:
+    print("[+] Acceso permitido")
+elif codigo_respuesta == 301 or codigo_respuesta == 302:
+    print("[*] Redirección detectada")
+elif codigo_respuesta == 401:
+    print("[-] Autenticación requerida")
+elif codigo_respuesta == 403:
+    print("[-] Acceso prohibido")
+elif codigo_respuesta == 404:
+    print("[-] Recurso no encontrado")
+elif codigo_respuesta >= 500:
+    print("[!] Error del servidor")
+else:
+    print(f"[?] Código desconocido: {codigo_respuesta}")</code></pre>
+
+        <h3>Importancia de la Indentación</h3>
+
+        <p>Python usa indentación (espacios al inicio de línea) para definir bloques de código. La convención es usar
+            <strong>4 espacios</strong> por nivel.</p>
+
+        <pre><code class="language-python">#!/usr/bin/env python3
+"""
+Indentación en Python - Crucial para la estructura
+"""
+
+puerto = 443
+protocolo = "HTTPS"
+
+# Correcto: bloques bien indentados
+if puerto == 443:
+    print("Puerto seguro detectado")
+    if protocolo == "HTTPS":
+        print("Protocolo cifrado confirmado")
+        print("Conexión segura establecida")
+    else:
+        print("Advertencia: puerto 443 sin HTTPS")
+print("Fin del análisis")  # Esto está fuera del if
+
+# Incorrecto - causaría IndentationError:
+# if puerto == 443:
+# print("Error")  # Falta indentación</code></pre>
+
+        <h3>Condiciones Compuestas</h3>
+
+        <pre><code class="language-python">#!/usr/bin/env python3
+"""
+Condiciones compuestas con operadores lógicos
+"""
+
+# Datos de un escaneo
+puerto = 22
+estado = "abierto"
+servicio = "SSH"
+version = "OpenSSH_8.2"
+
+# AND: todas las condiciones deben cumplirse
+if puerto == 22 and estado == "abierto" and servicio == "SSH":
+    print("[+] Servicio SSH activo y accesible")
+
+# OR: al menos una condición debe cumplirse
+if puerto == 22 or puerto == 2222:
+    print("[*] Posible servicio SSH (puerto estándar o alternativo)")
+
+# NOT: negación
+autenticado = False
+if not autenticado:
+    print("[-] Usuario no autenticado")
+
+# Combinación compleja
+es_vulnerable = True
+tiene_exploit = True
+requiere_auth = False
+
+if es_vulnerable and tiene_exploit and not requiere_auth:
+    print("[!] CRÍTICO: Sistema explotable sin autenticación")
+elif es_vulnerable and tiene_exploit:
+    print("[!] Sistema vulnerable, pero requiere credenciales")
+elif es_vulnerable:
+    print("[*] Sistema vulnerable, sin exploit conocido")
+else:
+    print("[+] Sistema aparentemente seguro")</code></pre>
+
+        <h2>1.2 Operador Ternario</h2>
+
+        <p>El operador ternario permite escribir condicionales simples en una sola línea. Es útil para asignaciones
+            condicionales.</p>
+
+        <pre><code class="language-python">#!/usr/bin/env python3
+"""
+Operador ternario: condiciones en una línea
+"""
+
+# Sintaxis: valor_si_true if condicion else valor_si_false
+
+puerto = 443
+estado = "abierto"
+
+# Forma tradicional
+if estado == "abierto":
+    icono = "[+]"
+else:
+    icono = "[-]"
+
+# Forma con operador ternario
+icono = "[+]" if estado == "abierto" else "[-]"
+print(f"{icono} Puerto {puerto}: {estado}")
+
+# Más ejemplos prácticos
+codigo = 200
+mensaje = "Éxito" if codigo == 200 else "Error"
+
+intentos = 3
+nivel_riesgo = "ALTO" if intentos >= 3 else "BAJO"
+
+# Anidado (usar con moderación, puede ser difícil de leer)
+codigo = 404
+estado = "OK" if codigo == 200 else ("Redirección" if codigo < 400 else "Error")
+print(f"Estado: {estado}")
+
+# Uso en f-strings
+puerto = 22
+print(f"Puerto {puerto} {'privilegiado' if puerto < 1024 else 'no privilegiado'}")</code></pre>
+
+        <h2>1.3 Evaluación de Valores Truthy y Falsy</h2>
+
+        <p>Python evalúa ciertos valores como <code>True</code> o <code>False</code> en contextos booleanos. Entender
+            esto es crucial para escribir código más limpio y pythónico.</p>
+
+        <pre><code class="language-python">#!/usr/bin/env python3
+"""
+Valores Truthy y Falsy en Python
+"""
+
+# Valores FALSY (se evalúan como False):
+# - False
+# - None
+# - 0 (entero cero)
+# - 0.0 (float cero)
+# - "" (string vacío)
+# - [] (lista vacía)
+# - {} (diccionario vacío)
+# - () (tupla vacía)
+# - set() (conjunto vacío)
+
+# Valores TRUTHY: todo lo demás
+
+# Ejemplo práctico: verificar si hay resultados
+resultados_escaneo = []
+
+# Forma explícita (funciona pero no es pythónica)
+if len(resultados_escaneo) > 0:
+    print("Hay resultados")
+else:
+    print("No hay resultados")
+
+# Forma pythónica
+if resultados_escaneo:
+    print("Hay resultados")
+else:
+    print("No hay resultados")
+
+# Más ejemplos
+respuesta_servidor = ""
+if not respuesta_servidor:
+    print("El servidor no respondió")
+
+puertos_abiertos = [22, 80, 443]
+if puertos_abiertos:
+    print(f"Se encontraron {len(puertos_abiertos)} puertos abiertos")
+
+# Verificar None de forma segura
+configuracion = None
+
+if configuracion is None:
+    print("Configuración no cargada")
+
+# is vs ==
+# Usar 'is' para comparar con None, True, False
+# Usar '==' para comparar valores
+valor = None
+if valor is None:      # Correcto
+    pass
+if valor == None:      # Funciona pero no recomendado
+    pass</code></pre>
+
+    </section>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script
+        src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>

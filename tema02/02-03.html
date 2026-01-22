@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control de Flujo y Funciones</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-okaidia.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <header>
+        <div>Control de Flujo y Funciones</div>
+    </header>
+
+    <section class="contenido-didactico">
+        <h1>BLOQUE 3: Funciones</h1>
+
+        <h2>3.1 Definición y Llamada de Funciones</h2>
+
+        <p>Las funciones son bloques de código reutilizable. Permiten organizar el código, evitar repetición y crear
+            herramientas modulares.</p>
+
+        <h3>Sintaxis Básica</h3>
+
+        <pre><code class="language-python">#!/usr/bin/env python3
+"""
+Funciones básicas en Python
+"""
+
+# Definición de función
+def saludar():
+    """Función simple sin parámetros ni retorno."""
+    print("[*] Iniciando herramienta de seguridad...")
+    print("[*] Versión 1.0")
+
+# Llamada a la función
+saludar()
+
+# Función con parámetros
+def escanear_puerto(ip, puerto):
+    """Simula el escaneo de un puerto."""
+    print(f"[*] Escaneando {ip}:{puerto}")
+    # Aquí iría la lógica real
+    return True  # Simulamos puerto abierto
+
+# Llamada con argumentos
+resultado = escanear_puerto("192.168.1.1", 22)
+print(f"[+] Resultado: {'abierto' if resultado else 'cerrado'}")
+
+# Función con valor de retorno
+def suma(a, b):
+    """Retorna la suma de dos números."""
+    return a + b
+
+total = suma(10, 20)
+print(f"Suma: {total}")
+
+# Múltiples valores de retorno
+def analizar_ip(ip):
+    """Analiza una IP y retorna información."""
+    octetos = ip.split(".")
+    es_privada = ip.startswith("192.168.") or ip.startswith("10.")
+    es_valida = len(octetos) == 4
+    return es_valida, es_privada, octetos
+
+valida, privada, partes = analizar_ip("192.168.1.1")
+print(f"Válida: {valida}, Privada: {privada}, Octetos: {partes}")</code></pre>
+
+        <h3>Parámetros por Defecto</h3>
+
+        <pre><code class="language-python">#!/usr/bin/env python3
+"""
+Parámetros con valores por defecto
+"""
+
+def escanear(objetivo, puerto=80, timeout=5, verbose=False):
+    """
+    Escanea un puerto en un objetivo.
+    
+    Args:
+        objetivo: IP o hostname del objetivo
+        puerto: Puerto a escanear (default: 80)
+        timeout: Tiempo de espera en segundos (default: 5)
+        verbose: Mostrar información detallada (default: False)
+    """
+    if verbose:
+        print(f"[*] Objetivo: {objetivo}")
+        print(f"[*] Puerto: {puerto}")
+        print(f"[*] Timeout: {timeout}s")
+    
+    # Simulación de escaneo
+    print(f"[*] Escaneando {objetivo}:{puerto}...")
+    return True
+
+# Diferentes formas de llamar la función
+escanear("192.168.1.1")                          # Usa todos los defaults
+escanear("192.168.1.1", 443)                     # Cambia solo el puerto
+escanear("192.168.1.1", 22, 10)                  # Cambia puerto y timeout
+escanear("192.168.1.1", puerto=8080)             # Argumento nombrado
+escanear("192.168.1.1", verbose=True)            # Solo cambia verbose
+escanear("192.168.1.1", timeout=3, puerto=443)   # Orden no importa si son nombrados</code></pre>
+
+        <h3>Args y Kwargs</h3>
+
+        <pre><code class="language-python">#!/usr/bin/env python3
+"""
+*args y **kwargs para parámetros flexibles
+"""
+
+# *args - número variable de argumentos posicionales
+def escanear_puertos(ip, *puertos):
+    """Escanea múltiples puertos en una IP."""
+    print(f"[*] Escaneando {ip}")
+    for puerto in puertos:
+        print(f"    - Puerto {puerto}")
+    return len(puertos)
+
+num = escanear_puertos("192.168.1.1", 22, 80, 443, 8080)
+print(f"[*] Total puertos escaneados: {num}")
+
+# **kwargs - número variable de argumentos nombrados
+def configurar_escaneo(**opciones):
+    """Configura un escaneo con opciones variables."""
+    print("[*] Configuración:")
+    for clave, valor in opciones.items():
+        print(f"    {clave}: {valor}")
+
+configurar_escaneo(
+    objetivo="192.168.1.0/24",
+    puertos="1-1000",
+    velocidad="rapido",
+    guardar_log=True
+)
+
+# Combinando todo
+def herramienta(nombre, *objetivos, **opciones):
+    """Función con todo tipo de parámetros."""
+    print(f"[*] Herramienta: {nombre}")
+    print(f"[*] Objetivos: {objetivos}")
+    print(f"[*] Opciones: {opciones}")
+
+herramienta("scanner", "192.168.1.1", "192.168.1.2", verbose=True, output="json")</code></pre>
+
+        <h2>3.2 Alcance de Variables (Scope)</h2>
+
+        <pre><code class="language-python">#!/usr/bin/env python3
+"""
+Alcance de variables en Python
+"""
+
+# Variable global
+VERSION = "1.0"
+contador_global = 0
+
+def mostrar_version():
+    """Accede a variable global (lectura)."""
+    print(f"Versión: {VERSION}")
+
+def incrementar_contador():
+    """Modifica variable global."""
+    global contador_global  # Necesario para modificar
+    contador_global += 1
+    print(f"Contador: {contador_global}")
+
+def funcion_con_local():
+    """Demuestra variable local."""
+    mensaje = "Soy local"  # Solo existe dentro de esta función
+    print(mensaje)
+
+def ejemplo_scope():
+    """Ejemplo de scope anidado."""
+    externa = "Variable externa"
+    
+    def funcion_interna():
+        interna = "Variable interna"
+        print(externa)  # Puede acceder a la externa
+        print(interna)
+    
+    funcion_interna()
+    # print(interna)  # Error: no existe aquí
+
+# Demostración
+mostrar_version()
+incrementar_contador()
+incrementar_contador()
+funcion_con_local()
+ejemplo_scope()
+
+# Buena práctica: minimizar uso de variables globales
+# Mejor pasar datos como parámetros y retornar resultados</code></pre>
+
+        <h2>3.3 Documentación de Funciones</h2>
+
+        <pre><code class="language-python">#!/usr/bin/env python3
+"""
+Documentación de funciones con docstrings
+"""
+
+def validar_ip(ip):
+    """
+    Valida si una cadena es una dirección IP válida.
+    
+    Verifica que la IP tenga el formato correcto y que cada
+    octeto esté en el rango válido (0-255).
+    
+    Args:
+        ip (str): Cadena con la dirección IP a validar.
+    
+    Returns:
+        bool: True si la IP es válida, False en caso contrario.
+    
+    Raises:
+        TypeError: Si ip no es una cadena.
+    
+    Examples:
+        >>> validar_ip("192.168.1.1")
+        True
+        >>> validar_ip("256.1.1.1")
+        False
+        >>> validar_ip("192.168.1")
+        False
+    """
+    if not isinstance(ip, str):
+        raise TypeError("La IP debe ser una cadena")
+    
+    octetos = ip.split(".")
+    
+    if len(octetos) != 4:
+        return False
+    
+    for octeto in octetos:
+        if not octeto.isdigit():
+            return False
+        if not 0 <= int(octeto) <= 255:
+            return False
+    
+    return True
+
+
+# Acceder a la documentación
+print(validar_ip.__doc__)
+
+# O usar help()
+# help(validar_ip)
+
+# Probar la función
+ips_prueba = ["192.168.1.1", "256.1.1.1", "10.0.0", "abc.def.ghi.jkl"]
+for ip in ips_prueba:
+    resultado = validar_ip(ip)
+    print(f"  {ip}: {'válida' if resultado else 'inválida'}")</code></pre>
+
+    </section>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script
+        src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>

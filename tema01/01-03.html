@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fundamentos de Python para Ciberseguridad</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-okaidia.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <header>
+        <div>Fundamentos de Python para Ciberseguridad</div>
+    </header>
+    <section class="contenido-didactico">
+        <h1>BLOQUE 3: Estructuras de Datos I</h1>
+
+        <h2>3.1 Listas</h2>
+        <p>Las listas son colecciones ordenadas y mutables. En ciberseguridad las usamos para almacenar objetivos,
+            puertos, resultados de escaneos, wordlists y mucho más.</p>
+
+        <h3>Creación y Acceso</h3>
+        <pre><code class="language-python">#!/usr/bin/env python3
+"""
+Listas en Python - Fundamentos
+"""
+
+# Creación de listas
+puertos_comunes = [21, 22, 23, 25, 80, 443, 3306, 8080]
+objetivos = ["192.168.1.1", "192.168.1.2", "192.168.1.3"]
+mixta = ["admin", 22, True, 3.14]  # Puede contener diferentes tipos
+vacia = []
+
+# Acceso por índice (empieza en 0)
+print(f"Primer puerto: {puertos_comunes[0]}")      # 21
+print(f"Último puerto: {puertos_comunes[-1]}")     # 8080
+print(f"Penúltimo: {puertos_comunes[-2]}")         # 3306
+
+# Slicing en listas
+print(f"Primeros 3: {puertos_comunes[:3]}")        # [21, 22, 23]
+print(f"Últimos 3: {puertos_comunes[-3:]}")        # [3306, 8080]
+print(f"Del 2 al 5: {puertos_comunes[2:5]}")       # [23, 25, 80]
+
+# Longitud
+print(f"Total de puertos: {len(puertos_comunes)}")
+
+# Verificar pertenencia
+print(f"¿22 está en la lista? {22 in puertos_comunes}")      # True
+print(f"¿8443 está en la lista? {8443 in puertos_comunes}")  # False</code></pre>
+
+        <h3>Modificación de Listas</h3>
+        <pre><code class="language-python">#!/usr/bin/env python3
+"""
+Modificación de listas
+"""
+
+puertos = [22, 80, 443]
+print(f"Original: {puertos}")
+
+# Añadir elementos
+puertos.append(8080)              # Añade al final
+print(f"Después de append: {puertos}")
+
+puertos.insert(0, 21)             # Inserta en posición específica
+print(f"Después de insert: {puertos}")
+
+puertos.extend([3306, 5432])      # Añade múltiples elementos
+print(f"Después de extend: {puertos}")
+
+# Modificar elemento existente
+puertos[0] = 20                   # Cambia el primer elemento
+print(f"Después de modificar [0]: {puertos}")
+
+# Eliminar elementos
+puertos.remove(20)                # Elimina por valor
+print(f"Después de remove: {puertos}")
+
+ultimo = puertos.pop()            # Elimina y retorna el último
+print(f"Elemento eliminado: {ultimo}")
+print(f"Después de pop: {puertos}")
+
+elemento = puertos.pop(0)         # Elimina y retorna por índice
+print(f"Eliminado en posición 0: {elemento}")
+
+# Limpiar lista
+# puertos.clear()                 # Vacía la lista completamente</code></pre>
+
+        <h3>Métodos Útiles</h3>
+        <pre><code class="language-python">#!/usr/bin/env python3
+"""
+Métodos de listas útiles para scripting
+"""
+
+# Ordenación
+puertos = [443, 22, 8080, 80, 21]
+puertos.sort()                    # Ordena in-place
+print(f"Ordenados: {puertos}")    # [21, 22, 80, 443, 8080]
+
+puertos.sort(reverse=True)        # Orden descendente
+print(f"Descendente: {puertos}")  # [8080, 443, 80, 22, 21]
+
+# sorted() crea una nueva lista sin modificar la original
+puertos_original = [443, 22, 8080]
+puertos_ordenados = sorted(puertos_original)
+print(f"Original: {puertos_original}")
+print(f"Nueva ordenada: {puertos_ordenados}")
+
+# Invertir
+puertos = [22, 80, 443]
+puertos.reverse()
+print(f"Invertida: {puertos}")    # [443, 80, 22]
+
+# Contar ocurrencias
+intentos = ["fail", "fail", "success", "fail"]
+print(f"Fallos: {intentos.count('fail')}")     # 3
+
+# Encontrar índice
+print(f"Posición de 'success': {intentos.index('success')}")  # 2
+
+# Copiar lista (importante: evita referencias)
+original = [1, 2, 3]
+copia = original.copy()           # Copia independiente
+referencia = original             # Mismo objeto en memoria
+
+original.append(4)
+print(f"Original: {original}")    # [1, 2, 3, 4]
+print(f"Copia: {copia}")          # [1, 2, 3]
+print(f"Referencia: {referencia}")  # [1, 2, 3, 4]</code></pre>
+
+        <h2>3.2 Tuplas</h2>
+        <p>Las tuplas son como listas pero inmutables. Una vez creadas, no pueden modificarse. Son útiles para datos que
+            no deben cambiar, como coordenadas de red fijas o configuraciones.</p>
+
+        <pre><code class="language-python">#!/usr/bin/env python3
+"""
+Tuplas - Colecciones inmutables
+"""
+
+# Creación
+coordenadas = (192, 168, 1, 1)
+servicio = ("SSH", 22, "TCP")
+un_elemento = (443,)              # Necesita coma para ser tupla
+
+# Acceso (igual que listas)
+print(f"Servicio: {servicio[0]}")
+print(f"Puerto: {servicio[1]}")
+
+# Desempaquetado (muy útil)
+nombre, puerto, protocolo = servicio
+print(f"{nombre} usa el puerto {puerto}/{protocolo}")
+
+# Uso práctico: retornar múltiples valores
+def analizar_servicio(banner):
+    nombre = "SSH"
+    version = "2.0"
+    return (nombre, version)
+
+resultado = analizar_servicio("SSH-2.0-OpenSSH")
+print(f"Servicio detectado: {resultado[0]} v{resultado[1]}")
+
+# Tuplas como claves de diccionario (listas no pueden)
+conexiones = {
+    ("192.168.1.1", 22): "activa",
+    ("192.168.1.1", 80): "cerrada"
+}
+print(conexiones[("192.168.1.1", 22)])
+
+# Intentar modificar causa error
+# coordenadas[0] = 10  # TypeError: 'tuple' object does not support item assignment</code></pre>
+
+        <h2>3.3 Diccionarios</h2>
+        <p>Los diccionarios almacenan pares clave-valor. Son perfectos para representar información estructurada como
+            resultados de escaneos, configuraciones o bases de datos de usuarios.</p>
+
+        <h3>Creación y Acceso</h3>
+        <pre><code class="language-python">#!/usr/bin/env python3
+"""
+Diccionarios - Almacenamiento clave-valor
+"""
+
+# Creación
+puerto_ssh = {
+    "numero": 22,
+    "protocolo": "TCP",
+    "servicio": "SSH",
+    "estado": "abierto"
+}
+
+# Otra forma de crear
+usuario = dict(nombre="admin", password="admin123", activo=True)
+
+# Acceso por clave
+print(f"Puerto: {puerto_ssh['numero']}")
+print(f"Servicio: {puerto_ssh['servicio']}")
+
+# Acceso seguro con get() (no lanza error si no existe)
+version = puerto_ssh.get("version")         # None si no existe
+version = puerto_ssh.get("version", "N/A")  # Valor por defecto
+print(f"Versión: {version}")
+
+# Verificar si existe una clave
+if "servicio" in puerto_ssh:
+    print("La clave 'servicio' existe")</code></pre>
+
+        <h3>Modificación de Diccionarios</h3>
+        <pre><code class="language-python">#!/usr/bin/env python3
+"""
+Modificación de diccionarios
+"""
+
+escaneo = {
+    "ip": "192.168.1.100",
+    "puertos_abiertos": [22, 80],
+    "sistema": "Linux"
+}
+
+# Añadir o modificar
+escaneo["hostname"] = "server01"           # Añade nueva clave
+escaneo["sistema"] = "Ubuntu 20.04"        # Modifica existente
+escaneo["puertos_abiertos"].append(443)    # Modifica lista interna
+
+print(escaneo)
+
+# Actualizar múltiples valores
+escaneo.update({
+    "mac": "00:11:22:33:44:55",
+    "timestamp": "2025-01-20 10:30:00"
+})
+
+# Eliminar
+del escaneo["timestamp"]                   # Elimina clave
+sistema = escaneo.pop("sistema")           # Elimina y retorna valor
+print(f"Sistema eliminado: {sistema}")</code></pre>
+
+        <h3>Iteración sobre Diccionarios</h3>
+        <pre><code class="language-python">#!/usr/bin/env python3
+"""
+Recorrer diccionarios
+"""
+
+servicios = {
+    21: "FTP",
+    22: "SSH",
+    80: "HTTP",
+    443: "HTTPS",
+    3306: "MySQL"
+}
+
+# Iterar sobre claves
+print("Puertos detectados:")
+for puerto in servicios:
+    print(f"  {puerto}")
+
+# Iterar sobre valores
+print("\nServicios detectados:")
+for servicio in servicios.values():
+    print(f"  {servicio}")
+
+# Iterar sobre ambos (más común)
+print("\nResumen completo:")
+for puerto, servicio in servicios.items():
+    print(f"  Puerto {puerto}: {servicio}")
+
+# Obtener todas las claves y valores como listas
+puertos = list(servicios.keys())
+nombres = list(servicios.values())</code></pre>
+
+        <h3>Diccionarios Anidados</h3>
+        <pre><code class="language-python">#!/usr/bin/env python3
+"""
+Diccionarios anidados - Estructuras complejas
+"""
+
+resultado_escaneo = {
+    "192.168.1.1": {
+        "hostname": "router",
+        "puertos": {
+            22: {"estado": "abierto", "servicio": "SSH"},
+            80: {"estado": "abierto", "servicio": "HTTP"}
+        },
+        "os": "RouterOS"
+    },
+    "192.168.1.100": {
+        "hostname": "webserver",
+        "puertos": {
+            80: {"estado": "abierto", "servicio": "Apache"},
+            443: {"estado": "abierto", "servicio": "Apache SSL"}
+        },
+        "os": "Ubuntu 20.04"
+    }
+}
+
+# Acceso a datos anidados
+print(resultado_escaneo["192.168.1.1"]["hostname"])
+print(resultado_escaneo["192.168.1.100"]["puertos"][443]["servicio"])
+
+# Recorrer estructura compleja
+for ip, datos in resultado_escaneo.items():
+    print(f"\n[+] {ip} ({datos['hostname']})")
+    print(f"    OS: {datos['os']}")
+    print("    Puertos:")
+    for puerto, info in datos["puertos"].items():
+        print(f"      {puerto}/{info['servicio']} - {info['estado']}")</code></pre>
+
+    </section>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script
+        src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>

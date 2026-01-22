@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fundamentos de Python para Ciberseguridad</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-okaidia.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <header>
+        <div>Fundamentos de Python para Ciberseguridad</div>
+    </header>
+    <section class="contenido-didactico">
+        <h1>BLOQUE 2: Strings y Entrada/Salida</h1>
+
+        <h2>2.1 Manipulación de Strings</h2>
+        <p>Los strings son fundamentales en ciberseguridad. Trabajamos constantemente con direcciones IP, URLs, hashes,
+            logs y respuestas de servidores.</p>
+
+        <h3>Creación y Características Básicas</h3>
+        <pre><code class="language-python">#!/usr/bin/env python3
+"""
+Manipulación de strings para ciberseguridad
+"""
+
+# Diferentes formas de crear strings
+ip = "192.168.1.1"
+dominio = 'example.com'
+banner = """HTTP/1.1 200 OK
+Server: Apache/2.4.41
+Content-Type: text/html"""
+
+# Los strings son inmutables y tienen índices
+url = "https://target.com/admin"
+print(f"Primer carácter: {url[0]}")     # h
+print(f"Último carácter: {url[-1]}")    # n
+print(f"Longitud: {len(url)}")          # 24</code></pre>
+
+        <h3>Slicing (Rebanado)</h3>
+        <p>El slicing permite extraer partes de un string con la sintaxis <code>[inicio:fin:paso]</code>.</p>
+
+        <pre><code class="language-python">url = "https://target.com/admin"
+
+# Extraer protocolo
+protocolo = url[0:5]        # "https"
+protocolo = url[:5]         # También funciona
+
+# Extraer desde una posición hasta el final
+ruta = url[19:]             # "/admin"
+
+# Extraer el dominio (posiciones 8 a 18)
+dominio = url[8:18]         # "target.com"
+
+# Paso negativo para invertir
+texto = "HASH"
+print(texto[::-1])          # "HSAH"
+
+# Ejemplo práctico: extraer octetos de una IP
+ip = "192.168.1.100"
+partes = ip.split(".")
+print(f"Red: {partes[0]}.{partes[1]}.{partes[2]}.0")</code></pre>
+
+        <h3>Métodos de Strings Esenciales</h3>
+        <pre><code class="language-python">#!/usr/bin/env python3
+"""
+Métodos de strings más útiles en ciberseguridad
+"""
+
+# === Cambio de caso ===
+usuario = "Admin"
+print(usuario.upper())      # "ADMIN"
+print(usuario.lower())      # "admin"
+print(usuario.capitalize()) # "Admin"
+
+# === Búsqueda ===
+log = "Failed login from 192.168.1.50 - user: admin"
+
+print(log.find("192"))          # 19 (posición donde empieza)
+print(log.find("success"))      # -1 (no encontrado)
+print("Failed" in log)          # True
+print(log.count("i"))           # 3 (cuenta ocurrencias)
+print(log.startswith("Failed")) # True
+print(log.endswith("admin"))    # True
+
+# === División y unión ===
+ip = "192.168.1.100"
+octetos = ip.split(".")         # ["192", "168", "1", "100"]
+print(octetos)
+
+puertos = ["22", "80", "443"]
+puertos_str = ",".join(puertos) # "22,80,443"
+print(puertos_str)
+
+# === Limpieza ===
+entrada = "   192.168.1.1\n"
+ip_limpia = entrada.strip()     # "192.168.1.1"
+print(f"'{ip_limpia}'")
+
+# === Reemplazo ===
+comando = "ping -c 4 TARGET"
+comando_real = comando.replace("TARGET", "192.168.1.1")
+print(comando_real)             # "ping -c 4 192.168.1.1"
+
+# === Validación ===
+puerto = "8080"
+print(puerto.isdigit())         # True (solo dígitos)
+print(puerto.isalpha())         # False (solo letras)
+print(puerto.isalnum())         # True (letras o números)</code></pre>
+
+        <h2>2.2 Formateo de Strings</h2>
+        <p>El formateo permite construir strings dinámicos de forma legible, algo esencial para generar comandos, logs o
+            reportes.</p>
+
+        <h3>F-strings (Recomendado - Python 3.6+)</h3>
+        <pre><code class="language-python">#!/usr/bin/env python3
+"""
+F-strings: la forma moderna de formatear strings
+"""
+
+ip = "192.168.1.1"
+puerto = 22
+servicio = "SSH"
+
+# Sintaxis básica
+print(f"Escaneando {ip}:{puerto}")
+
+# Expresiones dentro de f-strings
+print(f"Puerto {puerto} {'abierto' if puerto == 22 else 'desconocido'}")
+
+# Formateo de números
+tiempo = 0.0034521
+print(f"Tiempo de respuesta: {tiempo:.2f} segundos")  # 0.00 segundos
+print(f"Tiempo de respuesta: {tiempo:.4f} segundos")  # 0.0035 segundos
+
+# Alineación y relleno
+for p in [22, 80, 443, 8080]:
+    print(f"Puerto: {p:>5} | Estado: OPEN")
+# Salida:
+# Puerto:    22 | Estado: OPEN
+# Puerto:    80 | Estado: OPEN
+# Puerto:   443 | Estado: OPEN
+# Puerto:  8080 | Estado: OPEN
+
+# Representación de números
+numero = 255
+print(f"Decimal: {numero}")        # 255
+print(f"Hexadecimal: {numero:x}")  # ff
+print(f"Binario: {numero:b}")      # 11111111
+print(f"Hex con prefijo: {numero:#x}")  # 0xff</code></pre>
+
+        <h3>Método format() (Alternativa)</h3>
+        <pre><code class="language-python"># Útil cuando la plantilla viene de otra fuente
+plantilla = "Conexión a {host}:{port} - Estado: {status}"
+resultado = plantilla.format(host="10.0.0.1", port=443, status="OK")
+print(resultado)</code></pre>
+
+        <h2>2.3 Entrada de Usuario con input()</h2>
+        <pre><code class="language-python">#!/usr/bin/env python3
+"""
+Entrada de usuario - Precaución: nunca confíes en la entrada
+"""
+
+# Entrada básica
+objetivo = input("Introduce la IP objetivo: ")
+print(f"Preparando escaneo de {objetivo}")
+
+# input() siempre devuelve string
+puerto = input("Puerto a escanear: ")
+print(f"Tipo de puerto: {type(puerto)}")  # <class 'str'>
+
+# Para usar como número, convertir
+puerto_num = int(puerto)
+print(f"Puerto + 1 = {puerto_num + 1}")</code></pre>
+
+        <h2>2.4 Conversión de Tipos (Casting)</h2>
+        <p>La conversión entre tipos es constante en scripting de seguridad. Trabajamos con puertos como números pero
+            los leemos como strings, convertimos bytes a texto y viceversa.</p>
+
+        <pre><code class="language-python">#!/usr/bin/env python3
+"""
+Conversión de tipos de datos
+"""
+
+# String a Integer
+puerto_str = "8080"
+puerto_int = int(puerto_str)
+print(f"Puerto como número: {puerto_int + 1}")  # 8081
+
+# String a Float
+tiempo_str = "0.034"
+tiempo_float = float(tiempo_str)
+
+# Número a String
+puerto = 443
+mensaje = "Puerto: " + str(puerto)
+
+# Integer a diferentes bases
+numero = 192
+print(f"Binario: {bin(numero)}")    # 0b11000000
+print(f"Hexadecimal: {hex(numero)}")  # 0xc0
+print(f"Desde hex: {int('c0', 16)}")  # 192
+
+# String a lista de caracteres
+password = "admin123"
+caracteres = list(password)
+print(caracteres)  # ['a', 'd', 'm', 'i', 'n', '1', '2', '3']
+
+# Bytes y Strings (crucial para sockets y criptografía)
+texto = "Hola"
+bytes_data = texto.encode('utf-8')      # String a bytes
+print(bytes_data)                        # b'Hola'
+
+texto_recuperado = bytes_data.decode('utf-8')  # Bytes a string
+print(texto_recuperado)                  # "Hola"
+
+# Conversión de IP a bytes (útil para paquetes de red)
+ip = "192.168.1.1"
+octetos = [int(x) for x in ip.split(".")]
+ip_bytes = bytes(octetos)
+print(ip_bytes)  # b'\xc0\xa8\x01\x01'</code></pre>
+
+    
+    </section>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script
+        src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>

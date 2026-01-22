@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fundamentos de Python para Ciberseguridad</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-okaidia.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <header>
+        <div>Fundamentos de Python para Ciberseguridad</div>
+    </header>
+
+    <section class="contenido-didactico">
+        <h1>BLOQUE 1: Introducción y Entorno</h1>
+
+        <h2>1.1 ¿Por qué Python en Ciberseguridad?</h2>
+        <p>Python se ha convertido en el lenguaje de referencia en ciberseguridad por varias razones fundamentales. Su
+            sintaxis clara y legible permite escribir scripts rápidamente, algo crucial cuando necesitas automatizar
+            tareas repetitivas o crear herramientas personalizadas durante un pentest. La enorme cantidad de bibliotecas
+            disponibles, desde <strong>Scapy</strong> para manipulación de paquetes hasta <strong>Requests</strong> para
+            interacción HTTP, proporciona un arsenal completo sin necesidad de reinventar la rueda.</p>
+
+        <p>La mayoría de herramientas profesionales están escritas en Python o permiten integración con él. Hablamos de
+            frameworks como <strong>Metasploit</strong> (que acepta scripts Python), herramientas como
+            <strong>SQLMap</strong>, <strong>Volatility</strong> para análisis forense, o incluso gran parte de las
+            utilidades incluidas en <strong>Kali Linux</strong>. Además, muchos exploits publicados en bases de datos
+            como <strong>Exploit-DB</strong> están escritos en Python, por lo que entender el lenguaje te permite
+            analizar, modificar y adaptar código existente.</p>
+
+        <h3>Casos de uso concretos:</h3>
+        <ul>
+            <li>Automatización de escaneos y reconocimiento</li>
+            <li>Desarrollo de exploits y payloads personalizados</li>
+            <li>Análisis de logs y detección de anomalías</li>
+            <li>Scripting para CTFs (Capture The Flag)</li>
+            <li>Automatización de tareas de administración segura</li>
+            <li>Desarrollo de herramientas forenses</li>
+            <li>Creación de fuzzers y scrapers</li>
+        </ul>
+
+        <h2>1.2 Instalación y Configuración del Entorno</h2>
+
+        <h3>Instalación de Python</h3>
+        <p><strong>En Windows:</strong><br>
+            Descarga el instalador desde <code>python.org</code>. Durante la instalación, marca obligatoriamente la
+            casilla <mark>"Add Python to PATH"</mark>. Verifica la instalación abriendo PowerShell o CMD y ejecutando
+            <code>python --version</code>.</p>
+
+        <p><strong>En Linux (Debian/Ubuntu/Kali):</strong><br>
+            Python suele venir preinstalado. Verifica con <code>python3 --version</code>. Si necesitas instalarlo:
+            <code>sudo apt update && sudo apt install python3 python3-pip</code>.</p>
+
+        <p><strong>En macOS:</strong><br>
+            Usa Homebrew: <code>brew install python3</code>.</p>
+
+        <h3>Configuración del Editor</h3>
+        <p>Recomiendo <strong>Visual Studio Code</strong> por su versatilidad y extensiones. Instala las siguientes
+            extensiones:</p>
+        <ul>
+            <li><strong>Python</strong> (Microsoft)</li>
+            <li><strong>Pylance</strong> para autocompletado inteligente</li>
+            <li>Opcionalmente <strong>indent-rainbow</strong> para visualizar mejor la indentación</li>
+        </ul>
+        <p>Alternativamente, <strong>PyCharm Community Edition</strong> ofrece un entorno más completo pero con mayor
+            consumo de recursos.</p>
+
+        <h3>Verificación del Entorno</h3>
+        <pre><code class="language-bash"># Verificar versión de Python
+python3 --version
+
+# Verificar pip (gestor de paquetes)
+pip3 --version
+
+# Crear un directorio de trabajo
+mkdir ~/curso_python_security
+cd ~/curso_python_security</code></pre>
+
+        <h2>1.3 El Intérprete Interactivo y Scripts</h2>
+        <p>Python ofrece dos formas de trabajar. El <strong>intérprete interactivo (REPL)</strong> es perfecto para
+            probar código rápidamente y experimentar. Accedes escribiendo <code>python3</code> en la terminal.</p>
+
+        <pre><code class="language-python">>>> print("Hola, futuro pentester")
+Hola, futuro pentester
+>>> 2 + 2
+4
+>>> exit()</code></pre>
+
+        <p>Para programas más complejos, escribimos archivos <code>.py</code>. Crea un archivo llamado
+            <code>primer_script.py</code>:</p>
+
+        <pre><code class="language-python">#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Primer script del curso de Python para Ciberseguridad
+Autor: [Tu nombre]
+"""
+
+print("=== Iniciando reconocimiento ===")
+print("Objetivo: Aprender Python")
+print("Estado: Conexión establecida")</code></pre>
+
+        <p>Ejecútalo desde la terminal:</p>
+        <pre><code class="language-bash">python3 primer_script.py</code></pre>
+
+        <blockquote>
+            <strong>Nota:</strong> El shebang (<code>#!/usr/bin/env python3</code>) permite ejecutar el script
+            directamente en sistemas Unix si le das permisos de ejecución (<code>chmod +x primer_script.py</code>).
+        </blockquote>
+
+        <h2>1.4 Variables y Tipos de Datos Básicos</h2>
+        <p>Las variables en Python son contenedores para almacenar datos. No necesitas declarar el tipo explícitamente;
+            Python lo infiere automáticamente.</p>
+
+        <pre><code class="language-python">#!/usr/bin/env python3
+"""
+Demostración de variables y tipos de datos
+"""
+
+# === STRINGS (cadenas de texto) ===
+objetivo = "192.168.1.100"
+protocolo = 'TCP'
+banner = """SSH-2.0-OpenSSH_8.2p1 Ubuntu-4ubuntu0.5
+Welcome to Ubuntu 20.04.3 LTS"""
+
+# === INTEGERS (números enteros) ===
+puerto = 22
+intentos_maximos = 3
+timeout = 5
+
+# === FLOATS (números decimales) ===
+version_ssl = 3.0
+tiempo_respuesta = 0.045
+
+# === BOOLEANS (verdadero/falso) ===
+puerto_abierto = True
+requiere_autenticacion = False
+
+# === NONE (ausencia de valor) ===
+respuesta_servidor = None
+
+# Verificar tipos con type()
+print(type(objetivo))       # <class 'str'>
+print(type(puerto))         # <class 'int'>
+print(type(tiempo_respuesta))  # <class 'float'>
+print(type(puerto_abierto)) # <class 'bool'></code></pre>
+
+        <h3>Convenciones de Nomenclatura</h3>
+        <p>En Python seguimos <strong>PEP 8</strong> para nombrar variables. Usamos <code>snake_case</code> (palabras en
+            minúscula separadas por guiones bajos). Los nombres deben ser descriptivos: <code>ip_objetivo</code> es
+            mejor que <code>ip</code> o <code>x</code>. Las constantes se escriben en MAYÚSCULAS:
+            <code>MAX_INTENTOS = 5</code>.</p>
+
+        <pre><code class="language-python"># ✓ Correcto
+direccion_ip = "10.0.0.1"
+numero_puerto = 443
+esta_activo = True
+
+# ✗ Evitar
+x = "10.0.0.1"
+DireccionIP = "10.0.0.1"
+direccionip = "10.0.0.1"</code></pre>
+
+        <h2>1.5 Operadores</h2>
+
+        <h3>Operadores Aritméticos</h3>
+        <pre><code class="language-python">#!/usr/bin/env python3
+"""
+Operadores en Python
+"""
+
+# Operadores aritméticos
+a = 10
+b = 3
+
+print(f"Suma: {a + b}")           # 13
+print(f"Resta: {a - b}")          # 7
+print(f"Multiplicación: {a * b}") # 30
+print(f"División: {a / b}")       # 3.333...
+print(f"División entera: {a // b}")  # 3
+print(f"Módulo (resto): {a % b}") # 1
+print(f"Potencia: {a ** b}")      # 1000
+
+# Aplicación: Calcular rango de IPs
+ip_base = 192 * (256**3) + 168 * (256**2) + 1 * 256 + 0
+print(f"IP base en decimal: {ip_base}")</code></pre>
+
+        <h3>Operadores de Comparación</h3>
+        <pre><code class="language-python">puerto = 22
+puerto_ssh = 22
+puerto_http = 80
+
+print(puerto == puerto_ssh)   # True (igualdad)
+print(puerto != puerto_http)  # True (diferente)
+print(puerto < puerto_http)   # True (menor que)
+print(puerto > 1024)          # False (mayor que)
+print(puerto <= 22)           # True (menor o igual)
+print(puerto >= 1)            # True (mayor o igual)</code></pre>
+
+        <h3>Operadores Lógicos</h3>
+        <pre><code class="language-python">puerto = 443
+protocolo = "HTTPS"
+
+# AND: ambas condiciones deben ser verdaderas
+es_web_seguro = puerto == 443 and protocolo == "HTTPS"
+print(f"¿Es conexión web segura? {es_web_seguro}")  # True
+
+# OR: al menos una condición debe ser verdadera
+es_puerto_web = puerto == 80 or puerto == 443
+print(f"¿Es puerto web? {es_puerto_web}")  # True
+
+# NOT: invierte el valor
+servicio_activo = True
+print(f"¿Servicio inactivo? {not servicio_activo}")  # False</code></pre>
+
+        <h3>Operadores de Asignación Compuesta</h3>
+        <pre><code class="language-python">contador = 0
+contador += 1   # Equivale a: contador = contador + 1
+contador -= 1   # Resta y asigna
+contador *= 2   # Multiplica y asigna
+contador /= 2   # Divide y asigna</code></pre>
+    </section>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script
+        src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>

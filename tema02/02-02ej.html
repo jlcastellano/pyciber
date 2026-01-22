@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control de Flujo y Funciones</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-okaidia.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <header>
+        <div>Control de Flujo y Funciones</div>
+    </header>
+
+    <section class="contenido-didactico">
+        <h1>BLOQUE 2: Bucles</h1>
+        <h2>Práctica: Escáner de Puertos Simulado</h2>
+
+        <pre><code class="language-python">#!/usr/bin/env python3
+"""
+Práctica: Escáner de puertos simulado
+Combina bucles, condicionales y estructuras de datos
+"""
+
+import random
+
+print("=" * 60)
+print("   ESCÁNER DE PUERTOS SIMULADO")
+print("=" * 60)
+
+# Configuración
+objetivo = input("\nIntroduce la IP objetivo (o Enter para 192.168.1.1): ").strip()
+if not objetivo:
+    objetivo = "192.168.1.1"
+
+# Definir rango de puertos
+print("\nRangos disponibles:")
+print("  1. Puertos comunes (rápido)")
+print("  2. Top 100 puertos")
+print("  3. Rango personalizado")
+
+opcion = input("\nSelecciona opción (1-3): ").strip()
+
+if opcion == "1":
+    puertos_escanear = [21, 22, 23, 25, 53, 80, 110, 143, 443, 445, 3306, 3389, 8080]
+elif opcion == "2":
+    puertos_escanear = list(range(1, 101))
+elif opcion == "3":
+    inicio = int(input("Puerto inicial: "))
+    fin = int(input("Puerto final: "))
+    puertos_escanear = list(range(inicio, fin + 1))
+else:
+    print("Opción no válida, usando puertos comunes")
+    puertos_escanear = [21, 22, 23, 25, 80, 443, 8080]
+
+# Realizar escaneo simulado
+print(f"\n[*] Iniciando escaneo de {objetivo}")
+print(f"[*] Puertos a escanear: {len(puertos_escanear)}")
+print("-" * 60)
+
+puertos_abiertos = []
+puertos_cerrados = []
+puertos_filtrados = []
+
+servicios = {
+    21: "FTP", 22: "SSH", 23: "Telnet", 25: "SMTP",
+    53: "DNS", 80: "HTTP", 110: "POP3", 143: "IMAP",
+    443: "HTTPS", 445: "SMB", 3306: "MySQL", 3389: "RDP",
+    8080: "HTTP-Proxy"
+}
+
+for puerto in puertos_escanear:
+    # Simular resultado aleatorio
+    resultado = random.choices(
+        ["abierto", "cerrado", "filtrado"],
+        weights=[15, 75, 10]  # 15% abierto, 75% cerrado, 10% filtrado
+    )[0]
+    
+    if resultado == "abierto":
+        puertos_abiertos.append(puerto)
+        servicio = servicios.get(puerto, "desconocido")
+        print(f"  [+] {puerto}/tcp   abierto    {servicio}")
+    elif resultado == "filtrado":
+        puertos_filtrados.append(puerto)
+        # Solo mostrar si queremos ver filtrados
+        # print(f"  [?] {puerto}/tcp   filtrado")
+    else:
+        puertos_cerrados.append(puerto)
+        # No mostramos los cerrados para no saturar
+
+# Resumen
+print("-" * 60)
+print("\n[*] RESUMEN DEL ESCANEO")
+print(f"    Objetivo: {objetivo}")
+print(f"    Puertos escaneados: {len(puertos_escanear)}")
+print(f"    Puertos abiertos: {len(puertos_abiertos)}")
+print(f"    Puertos cerrados: {len(puertos_cerrados)}")
+print(f"    Puertos filtrados: {len(puertos_filtrados)}")
+
+if puertos_abiertos:
+    print(f"\n[+] Puertos abiertos: {puertos_abiertos}")
+    
+    # Análisis de riesgo
+    puertos_riesgo = [21, 23, 445, 3389]
+    riesgos_encontrados = [p for p in puertos_abiertos if p in puertos_riesgo]
+    
+    if riesgos_encontrados:
+        print(f"\n[!] ALERTA: Puertos de alto riesgo detectados: {riesgos_encontrados}")
+else:
+    print("\n[-] No se encontraron puertos abiertos")
+
+print("\n" + "=" * 60)</code></pre>
+
+    </section>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script
+        src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>
