@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SESIÓN 3: Archivos, Expresiones Regulares y OS</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-okaidia.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <div>SESIÓN 3: Archivos, Expresiones Regulares y OS</div>
+    </header>
+
+    <section class="contenido-didactico">
+
+        <h1>BLOQUE 2: Expresiones Regulares</h1>
+
+        <h2>2.1 Fundamentos del Módulo re</h2>
+
+        <p>Las expresiones regulares son patrones para buscar y manipular texto. Esenciales para parsing de logs, extracción de datos y validación.</p>
+
+        <pre><code class="language-python">#!/usr/bin/env python3
+"""
+Fundamentos de expresiones regulares con el módulo re
+"""
+
+import re
+
+# ========================================
+# FUNCIONES PRINCIPALES
+# ========================================
+
+texto = "Mi IP es 192.168.1.100 y el servidor está en 10.0.0.1"
+
+# re.search() - Busca la PRIMERA coincidencia
+# Retorna Match object o None
+resultado = re.search(r'\d+\.\d+\.\d+\.\d+', texto)
+if resultado:
+    print(f"search() encontró: {resultado.group()}")
+    print(f"  Posición: {resultado.start()} - {resultado.end()}")
+    print(f"  Span: {resultado.span()}")
+
+# re.match() - Busca SOLO al inicio del string
+resultado = re.match(r'Mi', texto)
+print(f"\nmatch('Mi'): {resultado.group() if resultado else 'No encontrado'}")
+
+resultado = re.match(r'\d+', texto)  # No empieza con número
+print(f"match('\\d+'): {resultado.group() if resultado else 'No encontrado'}")
+
+# re.findall() - Encuentra TODAS las coincidencias (retorna lista)
+ips = re.findall(r'\d+\.\d+\.\d+\.\d+', texto)
+print(f"\nfindall() IPs: {ips}")
+
+# re.finditer() - Encuentra todas, retorna iterador de Match objects
+print("\nfinditer() IPs:")
+for match in re.finditer(r'\d+\.\d+\.\d+\.\d+', texto):
+    print(f"  {match.group()} en posición {match.span()}")
+
+# re.sub() - Sustituir coincidencias
+texto_censurado = re.sub(r'\d+\.\d+\.\d+\.\d+', '[IP OCULTA]', texto)
+print(f"\nsub(): {texto_censurado}")
+
+# re.split() - Dividir por patrón
+log = "ERROR:2024-01-15:192.168.1.1:Conexión fallida"
+partes = re.split(r':', log)
+print(f"\nsplit(): {partes}")
+
+# Limitar splits
+partes = re.split(r':', log, maxsplit=2)
+print(f"split(maxsplit=2): {partes}")
+
+# ========================================
+# COMPILAR EXPRESIONES
+# ========================================
+
+# Para patrones que se usan múltiples veces, compilar es más eficiente
+patron_ip = re.compile(r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}')
+
+textos = [
+    "Servidor: 192.168.1.1",
+    "Cliente: 10.0.0.50",
+    "Sin IP aquí",
+    "Gateway: 172.16.0.1"
+]
+
+print("\nUsando patrón compilado:")
+for t in textos:
+    match = patron_ip.search(t)
+    if match:
+        print(f"  '{t}' -> {match.group()}")</code></pre>
+
+        <h2>2.2 Metacaracteres y Patrones</h2>
+
+        <pre><code class="language-python">#!/usr/bin/env python3
+"""
+Metacaracteres y patrones de expresiones regulares
+"""
+
+import re
+
+# ========================================
+# METACARACTERES BÁSICOS
+# ========================================
+
+print("=== METACARACTERES BÁSICOS ===\n")
+
+texto = "abc123 ABC456 a1b2c3 test@email.com 192.168.1.1"
+
+# . (punto) - Cualquier carácter excepto newline
+print(f"Patrón 'a.c': {re.findall(r'a.c', texto)}")  # abc
+
+# \d - Dígito [0-9]
+print(f"Patrón '\\d+': {re.findall(r'\d+', texto)}")
+
+# \D - NO dígito
+print(f"Patrón '\\D+': {re.findall(r'\D+', texto)}")
+
+# \w - Alfanumérico [a-zA-Z0-9_]
+print(f"Patrón '\\w+': {re.findall(r'\w+', texto)}")
+
+# \W - NO alfanumérico
+print(f"Patrón '\\W+': {re.findall(r'\W+', texto)}")
+
+# \s - Espacio en blanco (espacio, tab, newline)
+print(f"Patrón '\\s+': {re.findall(r'\s+', 'hola   mundo\ttab')}")
+
+# \S - NO espacio en blanco
+print(f"Patrón '\\S+': {re.findall(r'\S+', 'hola   mundo')}")
+
+# ========================================
+# CUANTIFICADORES
+# ========================================
+
+print("\n=== CUANTIFICADORES ===\n")
+
+texto = "a aa aaa aaaa b bb bbb"
+
+# * - Cero o más
+print(f"'a*': {re.findall(r'a*', texto)}")  # Incluye strings vacíos
+
+# + - Uno o más
+print(f"'a+': {re.findall(r'a+', texto)}")
+
+# ? - Cero o uno
+print(f"'a?': {re.findall(r'a?', texto)}")
+
+# {n} - Exactamente n
+print(f"'a{{2}}': {re.findall(r'a{2}', texto)}")
+
+# {n,m} - Entre n y m
+print(f"'a{{2,3}}': {re.findall(r'a{2,3}', texto)}")
+
+# {n,} - n o más
+print(f"'a{{2,}}': {re.findall(r'a{2,}', texto)}")
+
+# Cuantificadores no codiciosos (lazy) con ?
+html = "<tag>contenido</tag><tag>otro</tag>"
+print(f"\nCodicioso '<.*>': {re.findall(r'<.*>', html)}")
+print(f"No codicioso '<.*?>': {re.findall(r'<.*?>', html)}")
+
+# ========================================
+# ANCLAS
+# ========================================
+
+print("\n=== ANCLAS ===\n")
+
+texto = "Python es genial"
+
+# ^ - Inicio de string (o línea con MULTILINE)
+print(f"'^Python': {re.search(r'^Python', texto)}")
+print(f"'^genial': {re.search(r'^genial', texto)}")  # None
+
+# $ - Final de string (o línea con MULTILINE)
+print(f"'genial$': {re.search(r'genial$', texto)}")
+print(f"'Python$': {re.search(r'Python$', texto)}")  # None
+
+# \b - Límite de palabra
+texto = "cat category caterpillar"
+print(f"'\\bcat\\b': {re.findall(r'\bcat\b', texto)}")  # Solo 'cat'
+print(f"'cat': {re.findall(r'cat', texto)}")  # Todos
+
+# ========================================
+# CLASES DE CARACTERES
+# ========================================
+
+print("\n=== CLASES DE CARACTERES ===\n")
+
+texto = "abc123XYZ!@#"
+
+# [abc] - Cualquiera de estos caracteres
+print(f"'[aeiou]': {re.findall(r'[aeiou]', texto)}")
+
+# [a-z] - Rango
+print(f"'[a-z]': {re.findall(r'[a-z]', texto)}")
+print(f"'[A-Z]': {re.findall(r'[A-Z]', texto)}")
+print(f"'[0-9]': {re.findall(r'[0-9]', texto)}")
+
+# [^abc] - Negación (cualquiera EXCEPTO estos)
+print(f"'[^a-zA-Z]': {re.findall(r'[^a-zA-Z]', texto)}")
+
+# Combinaciones
+print(f"'[a-zA-Z0-9]': {re.findall(r'[a-zA-Z0-9]', texto)}")
+
+# ========================================
+# ALTERNANCIA Y AGRUPACIÓN
+# ========================================
+
+print("\n=== ALTERNANCIA Y AGRUPACIÓN ===\n")
+
+texto = "Error: fallo en conexión. Warning: timeout. Info: OK"
+
+# | - Alternancia (OR)
+print(f"'Error|Warning': {re.findall(r'Error|Warning', texto)}")
+
+# () - Grupos
+# Sin grupos, findall retorna toda la coincidencia
+print(f"'(Error|Warning):': {re.findall(r'(Error|Warning):', texto)}")
+
+# Con grupos, findall retorna solo los grupos
+log = "192.168.1.1 - GET /index.html - 200"
+patron = r'(\d+\.\d+\.\d+\.\d+) - (\w+) (.*?) - (\d+)'
+match = re.search(patron, log)
+if match:
+    print(f"\nMatch completo: {match.group(0)}")
+    print(f"Grupo 1 (IP): {match.group(1)}")
+    print(f"Grupo 2 (Método): {match.group(2)}")
+    print(f"Grupo 3 (Ruta): {match.group(3)}")
+    print(f"Grupo 4 (Código): {match.group(4)}")
+    print(f"Todos los grupos: {match.groups()}")</code></pre>
+
+        <h2>2.3 Patrones Comunes en Ciberseguridad</h2>
+
+        <pre><code class="language-python">#!/usr/bin/env python3
+"""
+Patrones regex comunes en ciberseguridad
+"""
+
+import re
+
+# ========================================
+# PATRONES COMUNES
+# ========================================
+
+patrones = {
+    # Direcciones IP (IPv4)
+    "ipv4": r'\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b',
+    
+    # IP simple (menos estricta)
+    "ipv4_simple": r'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b',
+    
+    # Direcciones IPv6 (simplificada)
+    "ipv6": r'(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}',
+    
+    # Email
+    "email": r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b',
+    
+    # URL
+    "url": r'https?://(?:[-\w.]|(?:%[\da-fA-F]{2}))+[/\w\-.?&=%]*',
+    
+    # Dominio
+    "dominio": r'\b(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}\b',
+    
+    # Dirección MAC
+    "mac": r'(?:[0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}',
+    
+    # Hash MD5
+    "md5": r'\b[a-fA-F0-9]{32}\b',
+    
+    # Hash SHA256
+    "sha256": r'\b[a-fA-F0-9]{64}\b',
+    
+    # Puerto
+    "puerto": r'\b(?:[1-9]\d{0,3}|[1-5]\d{4}|6[0-4]\d{3}|65[0-4]\d{2}|655[0-2]\d|6553[0-5])\b',
+    
+    # CVE
+    "cve": r'CVE-\d{4}-\d{4,}',
+    
+    # Base64
+    "base64": r'(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?',
+    
+    # JWT Token
+    "jwt": r'eyJ[A-Za-z0-9_-]*\.eyJ[A-Za-z0-9_-]*\.[A-Za-z0-9_-]*',
+}
+
+# Compilar patrones
+patrones_compilados = {nombre: re.compile(patron) for nombre, patron in patrones.items()}
+
+
+def extraer_indicadores(texto):
+    """
+    Extrae indicadores de compromiso (IoC) de un texto.
+    """
+    resultados = {}
+    
+    for nombre, patron in patrones_compilados.items():
+        matches = patron.findall(texto)
+        if matches:
+            resultados[nombre] = list(set(matches))  # Eliminar duplicados
+    
+    return resultados
+
+
+# ========================================
+# PRUEBA
+# ========================================
+
+texto_prueba = """
+Reporte de incidente de seguridad
+
+El atacante utilizó la IP 192.168.1.100 para realizar el ataque inicial.
+También se detectaron conexiones desde 10.0.0.50 y 203.0.113.42.
+
+Se encontraron los siguientes emails en los logs:
+- admin@empresa.com
+- hacker@malicious-domain.net
+- soporte@empresa.com
+
+URLs maliciosas detectadas:
+- https://malware.bad-site.com/payload.exe
+- http://phishing.example.com/login.php
+
+Hashes de archivos sospechosos:
+- MD5: 098f6bcd4621d373cade4e832627b4f6
+- SHA256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+
+Vulnerabilidades explotadas:
+- CVE-2024-1234
+- CVE-2023-9999
+
+Direcciones MAC de dispositivos comprometidos:
+- 00:1A:2B:3C:4D:5E
+- AA:BB:CC:DD:EE:FF
+"""
+
+print("=== EXTRACCIÓN DE INDICADORES DE COMPROMISO ===\n")
+
+iocs = extraer_indicadores(texto_prueba)
+
+for tipo, valores in iocs.items():
+    if valores:
+        print(f"[+] {tipo.upper()}:")
+        for valor in valores[:5]:  # Limitar a 5 por tipo
+            print(f"    - {valor}")
+        if len(valores) > 5:
+            print(f"    ... y {len(valores) - 5} más")
+        print()</code></pre>
+
+        <h2>2.4 Práctica: Extractor de IoCs</h2>
+
+        <pre><code class="language-python">#!/usr/bin/env python3
+"""
+Práctica: Extractor de IPs, emails y URLs de un archivo de texto
+"""
+
+import re
+import json
+from collections import Counter
+
+# Crear archivo de prueba
+contenido_log = """
+=== LOG DE SEGURIDAD - 2024-01-15 ===
+
+[10:00:01] Conexión entrante desde 192.168.1.100 (puerto 443)
+[10:00:02] Autenticación fallida para user@empresa.com desde 10.0.0.50
+[10:00:03] Intento de acceso a https://internal.empresa.com/admin
+[10:00:04] Email enviado a admin@empresa.com desde external@gmail.com
+[10:00:05] Descarga detectada: http://malware.bad-site.com/payload.exe
+[10:00:06] Conexión SSH desde 203.0.113.100 - usuario root
+[10:00:07] Request a https://api.empresa.com/v1/users
+[10:00:08] IP bloqueada: 185.220.101.1 (Tor exit node)
+[10:00:09] Alerta: 192.168.1.100 intentando acceso a /etc/passwd
+[10:00:10] Email sospechoso de phishing@scam-site.net
+[10:00:11] URL maliciosa detectada: https://phishing.fake-bank.com/login
+[10:00:12] Conexión desde 192.168.1.100 (múltiples intentos)
+[10:00:13] Notificación enviada a security-team@empresa.com
+[10:00:14] Acceso denegado para guest@temporal.org
+[10:00:15] Download blocked: http://malware.bad-site.com/trojan.zip
+"""
+
+with open("security_log.txt", "w") as f:
+    f.write(contenido_log)
+
+
+class ExtractorIoC:
+    """Extractor de Indicadores de Compromiso."""
+    
+    def __init__(self):
+        self.patrones = {
+            "ip": re.compile(r'\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b'),
+            "email": re.compile(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'),
+            "url": re.compile(r'https?://[^\s<>"{}|\\^`\[\]]+'),
+            "dominio": re.compile(r'\b(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}\b'),
+        }
+        
+        self.resultados = {}
+    
+    def extraer_de_archivo(self, ruta):
+        """Extrae IoCs de un archivo."""
+        with open(ruta, "r", encoding="utf-8") as f:
+            contenido = f.read()
+        
+        return self.extraer_de_texto(contenido)
+    
+    def extraer_de_texto(self, texto):
+        """Extrae IoCs de un texto."""
+        self.resultados = {}
+        
+        for tipo, patron in self.patrones.items():
+            matches = patron.findall(texto)
+            if matches:
+                self.resultados[tipo] = {
+                    "valores": list(set(matches)),
+                    "conteo": Counter(matches),
+                    "total": len(matches),
+                    "unicos": len(set(matches))
+                }
+        
+        return self.resultados
+    
+    def clasificar_ips(self):
+        """Clasifica las IPs encontradas."""
+        if "ip" not in self.resultados:
+            return {}
+        
+        clasificacion = {
+            "privadas": [],
+            "publicas": [],
+            "localhost": [],
+            "sospechosas": []
+        }
+        
+        # IPs conocidas como maliciosas (ejemplo)
+        ips_maliciosas = {"185.220.101.1", "203.0.113.100"}
+        
+        for ip in self.resultados["ip"]["valores"]:
+            if ip.startswith("127."):
+                clasificacion["localhost"].append(ip)
+            elif ip.startswith(("10.", "172.16.", "172.17.", "172.18.", 
+                               "172.19.", "172.20.", "172.21.", "172.22.",
+                               "172.23.", "172.24.", "172.25.", "172.26.",
+                               "172.27.", "172.28.", "172.29.", "172.30.",
+                               "172.31.", "192.168.")):
+                clasificacion["privadas"].append(ip)
+            elif ip in ips_maliciosas:
+                clasificacion["sospechosas"].append(ip)
+            else:
+                clasificacion["publicas"].append(ip)
+        
+        return clasificacion
+    
+    def clasificar_dominios(self):
+        """Clasifica los dominios/URLs encontrados."""
+        if "url" not in self.resultados:
+            return {}
+        
+        clasificacion = {
+            "internos": [],
+            "externos": [],
+            "sospechosos": []
+        }
+        
+        palabras_sospechosas = ["malware", "phishing", "bad-site", "scam", "fake"]
+        dominios_internos = ["empresa.com", "internal.empresa.com"]
+        
+        for url in self.resultados["url"]["valores"]:
+            es_sospechoso = any(palabra in url.lower() for palabra in palabras_sospechosas)
+            es_interno = any(dominio in url for dominio in dominios_internos)
+            
+            if es_sospechoso:
+                clasificacion["sospechosos"].append(url)
+            elif es_interno:
+                clasificacion["internos"].append(url)
+            else:
+                clasificacion["externos"].append(url)
+        
+        return clasificacion
+    
+    def generar_reporte(self, ruta_salida=None):
+        """Genera un reporte de los IoCs encontrados."""
+        reporte = []
+        reporte.append("=" * 60)
+        reporte.append("   REPORTE DE INDICADORES DE COMPROMISO (IoC)")
+        reporte.append("=" * 60)
+        
+        # Resumen
+        reporte.append("\n[*] RESUMEN:")
+        for tipo, datos in self.resultados.items():
+            reporte.append(f"    {tipo.upper()}: {datos['unicos']} únicos ({datos['total']} total)")
+        
+        # IPs
+        if "ip" in self.resultados:
+            reporte.append("\n[*] DIRECCIONES IP:")
+            clasificacion = self.clasificar_ips()
+            
+            if clasificacion["sospechosas"]:
+                reporte.append("    ⚠ SOSPECHOSAS:")
+                for ip in clasificacion["sospechosas"]:
+                    count = self.resultados["ip"]["conteo"][ip]
+                    reporte.append(f"      - {ip} ({count} ocurrencias)")
+            
+            if clasificacion["publicas"]:
+                reporte.append("    Públicas:")
+                for ip in clasificacion["publicas"]:
+                    reporte.append(f"      - {ip}")
+            
+            if clasificacion["privadas"]:
+                reporte.append("    Privadas:")
+                for ip in clasificacion["privadas"][:5]:
+                    count = self.resultados["ip"]["conteo"][ip]
+                    reporte.append(f"      - {ip} ({count} ocurrencias)")
+        
+        # URLs
+        if "url" in self.resultados:
+            reporte.append("\n[*] URLs:")
+            clasificacion = self.clasificar_dominios()
+            
+            if clasificacion["sospechosos"]:
+                reporte.append("    ⚠ SOSPECHOSAS:")
+                for url in clasificacion["sospechosos"]:
+                    reporte.append(f"      - {url}")
+            
+            if clasificacion["externos"]:
+                reporte.append("    Externos:")
+                for url in clasificacion["externos"]:
+                    reporte.append(f"      - {url}")
+        
+        # Emails
+        if "email" in self.resultados:
+            reporte.append("\n[*] EMAILS:")
+            for email in self.resultados["email"]["valores"]:
+                reporte.append(f"    - {email}")
+        
+        reporte.append("\n" + "=" * 60)
+        
+        texto_reporte = "\n".join(reporte)
+        
+        if ruta_salida:
+            with open(ruta_salida, "w") as f:
+                f.write(texto_reporte)
+        
+        return texto_reporte
+    
+    def exportar_json(self, ruta):
+        """Exporta los resultados en formato JSON."""
+        export = {
+            "iocs": {},
+            "clasificacion": {
+                "ips": self.clasificar_ips(),
+                "urls": self.clasificar_dominios()
+            }
+        }
+        
+        for tipo, datos in self.resultados.items():
+            export["iocs"][tipo] = datos["valores"]
+        
+        with open(ruta, "w") as f:
+            json.dump(export, f, indent=4)
+
+
+# ========================================
+# EJECUTAR EXTRACCIÓN
+# ========================================
+
+extractor = ExtractorIoC()
+extractor.extraer_de_archivo("security_log.txt")
+
+# Mostrar reporte
+print(extractor.generar_reporte())
+
+# Exportar a JSON
+extractor.exportar_json("iocs_extraidos.json")
+print("[+] IoCs exportados a: iocs_extraidos.json")</code></pre>
+
+    </section>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

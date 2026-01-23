@@ -223,6 +223,61 @@ ip_bytes = bytes(octetos)
 print(ip_bytes)  # b'\xc0\xa8\x01\x01'</code></pre>
 
     
+        <h2>2.5 — <code>str</code> vs <code>bytes</code> + encoding (UTF-8)</h2>
+
+        <h3>1) Idea clave (lenguaje llano)</h3>
+        <ul>
+            <li><code>str</code> = texto (caracteres).</li>
+            <li><code>bytes</code> = datos crudos (octetos) como los que viajan por red o se guardan en ficheros binarios.</li>
+            <li>En ciber/redes, <strong>sockets casi siempre te dan <code>bytes</code></strong>, y tú decides cómo decodificar.</li>
+        </ul>
+
+        <h3>2) Ejemplos rápidos en Python</h3>
+        <pre><code class="language-python">texto = "Hola"
+datos = b"Hola"
+
+print(type(texto))  # &lt;class 'str'&gt;
+print(type(datos))  # &lt;class 'bytes'&gt;</code></pre>
+
+        <h3>3) Convertir de <code>str</code> a <code>bytes</code> (enviar por red / guardar binario)</h3>
+        <pre><code class="language-python">payload_str = "GET / HTTP/1.1\r\nHost: example.com\r\n\r\n"
+payload_bytes = payload_str.encode("utf-8")
+
+print(payload_bytes[:20])</code></pre>
+
+        <h3>4) Convertir de <code>bytes</code> a <code>str</code> (leer de red / logs binarios)</h3>
+        <pre><code class="language-python">banner = b"SSH-2.0-OpenSSH_8.9p1 Ubuntu-3\r\n"
+banner_texto = banner.decode("utf-8", errors="replace")
+
+print(banner_texto)</code></pre>
+
+        <p><strong>Explicar <code>errors</code>:</strong></p>
+        <ul>
+            <li><code>strict</code> (por defecto): rompe si hay bytes inválidos.</li>
+            <li><code>replace</code>: sustituye por �, útil en reconocimiento.</li>
+            <li><code>ignore</code>: descarta bytes problemáticos (pierdes información).</li>
+        </ul>
+
+        <h3>5) Trampa típica: concatenar <code>str</code> y <code>bytes</code></h3>
+        <p>Esto falla:</p>
+        <pre><code class="language-python"># print("Banner: " + banner)  # TypeError</code></pre>
+
+        <p>Soluciones:</p>
+        <pre><code class="language-python">print("Banner:", banner)                 # imprime bytes "tal cual"
+print("Banner:", banner.decode("utf-8", errors="replace"))</code></pre>
+
+        <h3>6) Caso ciber real: "leer fichero y extraer indicadores"</h3>
+        <p>Ejemplo (lectura binaria y decodificación segura):</p>
+        <pre><code class="language-python">from pathlib import Path
+
+p = Path("data/sample.txt")
+
+contenido = p.read_bytes()  # bytes
+texto = contenido.decode("utf-8", errors="replace")  # str
+
+print(texto.splitlines()[:5])</code></pre>
+
+
     </section>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>

@@ -303,6 +303,68 @@ for ip, datos in resultado_escaneo.items():
     for puerto, info in datos["puertos"].items():
         print(f"      {puerto}/{info['servicio']} - {info['estado']}")</code></pre>
 
+       <h2>3.4 — Leer errores típicos</h2>
+
+        <h3>1) Anatomía de un traceback (qué mirar siempre)</h3>
+        <p>Cuando Python falla, el traceback te da:</p>
+        <ol>
+            <li><strong>Tipo de error</strong> (ej: <code>ValueError</code>, <code>KeyError</code>, <code>TypeError</code>)</li>
+            <li><strong>Línea exacta</strong> donde rompe</li>
+            <li><strong>Cadena de llamadas</strong> (de tu <code>main</code> hacia dentro)</li>
+            <li>Mensaje (a veces críptico, pero útil)</li>
+        </ol>
+
+        <h3>2) Errores típicos y cómo interpretarlos</h3>
+        
+        <p><strong>a) <code>ValueError</code> al convertir</strong></p>
+        <pre><code class="language-python">puerto = int("80/tcp")  # ValueError</code></pre>
+        <p>Solución: limpiar primero, o parsear con split.</p>
+
+        <p><strong>b) <code>KeyError</code> al acceder a diccionarios</strong></p>
+        <pre><code class="language-python">u = {"user": "ana"}
+print(u["password"])  # KeyError</code></pre>
+        <p>Soluciones:</p>
+        <pre><code class="language-python">print(u.get("password"))              # None si no existe
+print(u.get("password", "N/A"))       # valor por defecto</code></pre>
+
+        <p><strong>c) <code>IndexError</code> al acceder a listas</strong></p>
+        <pre><code class="language-python">parts = "10.0.0.1".split(".")
+print(parts[4])  # IndexError</code></pre>
+
+        <p><strong>d) <code>TypeError</code> por mezclar tipos</strong></p>
+        <pre><code class="language-python">print("Puerto: " + 80)  # TypeError
+print(f"Puerto: {80}")  # bien</code></pre>
+
+        <h3>3) Técnica rápida de depuración sin IDE</h3>
+        <ul>
+            <li>Usar prints informativos (temporal):</li>
+        </ul>
+        <pre><code class="language-python">print("DEBUG parts:", parts)</code></pre>
+        <ul>
+            <li>Validaciones rápidas:</li>
+        </ul>
+        <pre><code class="language-python">assert len(parts) == 4, "IP no tiene 4 octetos"</code></pre>
+
+        <h3>4) Debug en VS Code (pasos concretos para el aula)</h3>
+        <ol>
+            <li>Abrir carpeta del proyecto (la que contiene <code>.venv</code> y <code>src/</code>)</li>
+            <li>Seleccionar intérprete Python del venv:
+                <ul>
+                    <li><kbd>Python: Select Interpreter</kbd> → elegir <code>.venv</code></li>
+                </ul>
+            </li>
+            <li>Poner breakpoint (punto rojo) en la línea crítica</li>
+            <li>Ejecutar "Run Python File" o "Start Debugging"</li>
+            <li>Usar:
+                <ul>
+                    <li>Step Over (saltar)</li>
+                    <li>Step Into (entrar)</li>
+                    <li>Variables (inspección)</li>
+                    <li>Watch (expresiones)</li>
+                </ul>
+            </li>
+        </ol>        
+
     </section>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>

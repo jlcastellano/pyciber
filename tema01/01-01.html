@@ -111,7 +111,63 @@ print("Estado: Conexión establecida")</code></pre>
             directamente en sistemas Unix si le das permisos de ejecución (<code>chmod +x primer_script.py</code>).
         </blockquote>
 
-        <h2>1.4 Variables y Tipos de Datos Básicos</h2>
+        <h2>1.4 — Entorno profesional mínimo: <code>venv</code> + <code>pip</code> + ejecución reproducible</h2>
+
+        <h3>1) ¿Por qué esto importa en ciber?</h3>
+        <ul>
+            <li>Evita "en mi PC funciona": cada herramienta y librería queda aislada por proyecto.</li>
+            <li>Reduce conflictos de versiones (muy típico con <code>requests</code>, <code>cryptography</code>, etc.).</li>
+        </ul>
+
+        <h3>2) Flujo estándar (Linux/macOS)</h3>
+        <pre><code class="language-bash">mkdir curso-python-ciber
+cd curso-python-ciber
+
+python3 -m venv .venv
+source .venv/bin/activate
+
+python -V
+pip -V</code></pre>
+
+        <h3>3) Flujo estándar (Windows PowerShell)</h3>
+        <pre><code class="language-powershell">mkdir curso-python-ciber
+cd curso-python-ciber
+
+py -m venv .venv
+.\.venv\Scripts\Activate.ps1
+
+python -V
+pip -V</code></pre>
+
+        <p><mark>Si PowerShell bloquea scripts:</mark> explicar brevemente <code>Set-ExecutionPolicy -Scope CurrentUser RemoteSigned</code> (solo si aplica en el aula).</p>
+
+        <h3>4) Instalar dependencias y "congelar" versiones</h3>
+        <pre><code class="language-bash">pip install requests
+pip freeze > requirements.txt</code></pre>
+
+        <p>Reinstalación en otra máquina:</p>
+        <pre><code class="language-bash">pip install -r requirements.txt</code></pre>
+
+        <h3>5) Estructura mínima de proyecto (para el curso)</h3>
+        <pre><code class="language-plaintext">curso-python-ciber/
+  .venv/
+  src/
+    hello_hacker.py
+  data/
+    sample.txt
+  requirements.txt
+  README.md</code></pre>
+
+        <h3>6) Reglas de oro para el aula</h3>
+        <ul>
+            <li><strong>Siempre activar <code>.venv</code></strong> antes de ejecutar.</li>
+            <li>Ejecutar con el mismo Python del venv: <code>python src/archivo.py</code></li>
+            <li>No mezclar instaladores del sistema con pip global.</li>
+        </ul>
+
+
+
+        <h2>1.5 Variables y Tipos de Datos Básicos</h2>
         <p>Las variables en Python son contenedores para almacenar datos. No necesitas declarar el tipo explícitamente;
             Python lo infiere automáticamente.</p>
 
@@ -164,7 +220,7 @@ x = "10.0.0.1"
 DireccionIP = "10.0.0.1"
 direccionip = "10.0.0.1"</code></pre>
 
-        <h2>1.5 Operadores</h2>
+        <h2>1.6 Operadores</h2>
 
         <h3>Operadores Aritméticos</h3>
         <pre><code class="language-python">#!/usr/bin/env python3
