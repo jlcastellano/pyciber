@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expresiones regulares</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-okaidia.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <div>Expresiones regulares</div>
+    </header>
+
+    <section class="contenido-didactico">
+        <h1>Expresiones regulares</h1>
+        <h2>3.1. Construcción de expresiones regulares</h2>
+               
+        <p>Una expresión regular es un conjunto de reglas para describir un patrón. Ese patrón está formado por símbolos (letras, números, espacios, caracteres especiales). La mayoría tienen su significado "normal", pero algunos son especiales (los llamamos "metacaracteres") y para usarlos literalmente hay que "escaparlos".</p>
+        
+        <p>Veamos las reglas básicas:</p>
+        
+        <p>Puedes indicar que una cadena debe contener una secuencia exacta de símbolos, simplemente escribiéndolos. Por ejemplo, el patrón <code>"aaa"</code> solo admite cadenas con exactamente tres aes. Cualquier otra cosa no encaja.</p>
+        
+        <p>Como eso es muy estricto (sería como comparar cadenas directamente), las expresiones regulares te dejan indicar un conjunto de posibles símbolos usando corchetes. Por ejemplo, el patrón <code>[xyz]</code> significa: "en esta posición puede ir x, y, o z (una de las tres)".</p>
+        
+        <p>Entonces, la expresión <code>"aaa[xyz]"</code> admite las cadenas "aaax", "aaay" y "aaaz". Solo esas tres. Los corchetes representan una posición que puede tomar varios valores posibles.</p>
+        
+        <p>Otro ejemplo: ¿cómo harías un patrón para cualquier número impar negativo de una cifra?</p>
+        
+        <p>Primero el signo menos, y luego un dígito impar (1, 3, 5, 7 o 9). Podemos escribir ese conjunto como <code>[13579]</code>. El patrón completo sería: <code>-[13579]</code></p>
+        
+        <p>Esa expresión encaja con "-1", "-3", "-5", "-7" y "-9". Con una sola expresión representas todas esas cadenas posibles.</p>
+
+        <h2>3.2. Rangos</h2>
+        
+        <p>Como acabas de ver, poder indicar un conjunto de caracteres para una posición es muy útil. Pero hay un problema: si quieres todas las letras del alfabeto, ¿las escribes una a una?</p>
+        
+        <p>Para las minúsculas tendrías que escribir <code>"[abcdefghijklmnopqrstuvwxyz]"</code>; para las mayúsculas <code>"[ABCDEFGHIKLMNOPQRSTUVWXYZ]"</code>; y para ambas, las dos listas juntas. Un rollo.</p>
+        
+        <p>Para simplificar esto existen los rangos. Con un guion dentro de los corchetes indicas "desde este carácter hasta este otro". Mira estos ejemplos:</p>
+        
+        <p><code>"[a-z]"</code> representa todas las minúsculas (sin la eñe, que no está en el estándar). Es lo mismo que escribir todas las letras una a una.</p>
+        
+        <p><code>"[A-Z]"</code> representa todas las mayúsculas.</p>
+        
+        <p><code>"[a-zA-Z]"</code> representa mayúsculas y minúsculas juntas. Hemos unido dos rangos.</p>
+        
+        <p><code>"[A-Fu-z]"</code> representa las mayúsculas de la A a la F, y las minúsculas de la u a la z. Dos rangos en uno.</p>
+        
+        <p><code>"[0-9]"</code> representa cualquier dígito del 0 al 9. Solo uno, pero cualquiera de ellos.</p>
+        
+        <p><code>"[a-zA-Z0-9_]"</code> representa cualquier letra, dígito o guion bajo. Tres rangos más un carácter suelto.</p>
+        
+        <p>También puedes hacer el conjunto "contrario": admitir cualquier cosa EXCEPTO ciertos caracteres. Para eso usas el circunflejo '^' justo después del corchete de apertura.</p>
+        
+        <p>Por ejemplo, <code>"[^abc]"</code> significa "cualquier carácter que NO sea a, b ni c". Y <code>"[^0-9]"</code> significa "cualquier cosa que no sea un dígito" (letras, espacios, símbolos...). Escribir ese conjunto de forma explícita sería larguísimo, pero con la negación es facilísimo.</p>
+
+        <h2>3.3. Cuantificadores</h2>
+        
+        <p>Con lo que hemos visto, puedes indicar qué símbolos admite el patrón y en qué orden. Pero habrás notado que a veces tienes que repetir el mismo carácter o conjunto muchas veces. Eso es pesado, difícil de leer, y muy poco flexible si las cadenas pueden tener distintas longitudes.</p>
+        
+        <p>Para indicar repeticiones usamos los cuantificadores. Son cuatro: interrogación (?), asterisco (*), más (+) y llaves ({}):</p>
+        
+        <p><strong>Interrogante (?)</strong>. Por ejemplo, <code>"a?"</code>. Significa que el símbolo puede aparecer una vez o ninguna. La "a" puede estar o no estar.</p>
+        
+        <p><strong>Asterisco (*)</strong>. Por ejemplo, <code>"a*"</code>. El símbolo puede aparecer cero, una o muchas veces. Cadenas válidas: "", "a", "aa", "aaaaaa"...</p>
+        
+        <p><strong>Más (+)</strong>. Por ejemplo, <code>"a+"</code>. El símbolo debe aparecer al menos una vez, y puede repetirse cuantas veces quiera. Cadenas válidas: "a", "aa", "aaaaaa"... pero NO la cadena vacía.</p>
+        
+        <p><strong>Llaves ({n,m})</strong>. Por ejemplo, <code>"a{1,4}"</code>. Indicas el mínimo y máximo de repeticiones. Aquí la "a" debe aparecer entre 1 y 4 veces.</p>
+        
+        <p>Las llaves tienen más opciones:</p>
+        
+        <p><strong>Solo mínimo</strong>: <code>"a{2,}"</code> significa "al menos 2 veces" (sin límite máximo). ¡No olvides la coma!</p>
+        
+        <p><strong>Número exacto</strong>: <code>"a{5}"</code> significa "exactamente 5 veces". Sin coma, indica cantidad exacta.</p>
+        
+        <p>Con las llaves podrías sustituir a los otros cuantificadores, pero los otros son más cortos:</p>
+        
+        <p><code>"a?"</code> es igual que <code>"a{0,1}"</code></p>
+        
+        <p><code>"a*"</code> es igual que <code>"a{0,}"</code></p>
+        
+        <p><code>"a+"</code> es igual que <code>"a{1,}"</code></p>
+        
+        <p>Los cuantificadores también funcionan con conjuntos (corchetes). Por ejemplo:</p>
+        
+        <p><code>"[a-z]{1,4}[0-9]"</code> representa: entre 1 y 4 letras minúsculas, seguidas de un dígito. Encajan: "a0", "ab7", "xyz1", "aaxx5"... No encajan: "0", "aaxxx", "A0", "x22"...</p>
+        
+        <p><code>"[0-9A-F]+"</code> representa: uno o más dígitos o letras de la A a la F (mezclados como quieras). Encajan: "A0", "AB7", "1", "000", "0FF"... No encajan: "a0", "AX7", "0ff"...</p>
+        
+        <p>El cuantificador siempre se aplica al elemento justo anterior. Si quieres que afecte a varios elementos, hay que agruparlos con paréntesis. Eso lo vemos ahora.</p>
+
+        <h2>3.4. Agrupaciones: uso de paréntesis</h2>
+        
+        <p>A veces necesitas que un cuantificador se aplique a varios símbolos a la vez, no solo a uno. Mira este ejemplo:</p>
+        
+        <p><code>xy+</code> significa: una 'x' seguida de una o más 'y'. Admite "xy", "xyy", "xyyy"...</p>
+        
+        <p>Pero ¿y si quieres repeticiones del par "xy"? Es decir: "xy", "xyxy", "xyxyxy"... No puedes escribir <code>x+y+</code> porque eso significa "una o más x, luego una o más y". Admitiría "xxxxy" o "xxyyy", pero una vez que aparece la primera 'y', ya no hay más 'x'.</p>
+        
+        <p>La solución es agrupar con paréntesis: <code>(xy)+</code></p>
+        
+        <p>Ahora el par "xy" es una unidad, y el '+' se aplica a todo el grupo. Admite "xy", "xyxy", "xyxyxy"...</p>
+        
+        <p>Si combinas grupos con conjuntos, las posibilidades se multiplican. Por ejemplo, si quieres: "un 0 o un 1 seguido de una minúscula, todo eso entre 1 y 3 veces":</p>
+        
+        <p><code>([01][a-z]){1,3}</code></p>
+        
+        <p>Eso admite: "0s", "1b1a0x", "0c1z", "1a1a", "0b0b0b"...</p>
+
+        <h2>3.5. Alternativas: operador barra ('|') o disyuntor</h2>
+        
+        <p>La barra '|' sirve para indicar "esto O esto otro". Por ejemplo:</p>
+        
+        <p><code>"o|u"</code> busca cualquier 'o' o 'u'.</p>
+        
+        <p><code>"este|oeste|norte|sur"</code> encuentra cualquier punto cardinal (en minúsculas).</p>
+        
+        <p>La primera alternativa va desde el principio hasta la barra. La segunda desde la barra hasta la siguiente barra (o el final), y así sucesivamente.</p>
+        
+        <p>Por ejemplo, para admitir "Antes" y "antes", podrías escribir <code>"Antes|antes"</code>. Pero si quieres escribir la parte común solo una vez, NO puedes poner <code>"A|antes"</code> porque las alternativas serían "A" y "antes". Tienes que aislar la parte opcional entre paréntesis: <code>"(A|a)ntes"</code>.</p>
+        
+        <p>A veces puedes conseguir lo mismo con corchetes o con barras:</p>
+        
+        <p><code>"(A|a)ntes"</code> es igual que <code>"[Aa]ntes"</code></p>
+        
+        <p><code>"[xyz]=[0-2]"</code> es igual que <code>"(x|y|z)=(0|1|2)"</code></p>
+
+        <h2>3.6. Metacaracteres y escapado</h2>
+        
+        <p>Ya habrás notado que algunos caracteres tienen significados especiales en las expresiones regulares: las llaves (cuantificar), los paréntesis (agrupar), los corchetes (conjuntos), la barra (alternativas), el asterisco (cuantificador), el guion dentro de corchetes (rangos), la interrogación (cuantificador)... Estos se llaman metacaracteres.</p>
+        
+        <p>Si quieres usar uno de estos caracteres con su significado literal (por ejemplo, buscar un asterisco de verdad), tienes que escaparlo con barra invertida '\'. Así, <code>\*</code> significa "el carácter asterisco", no "repetir cero o más veces".</p>
+        
+        <p>Dependiendo del contexto, a veces no hace falta escapar. Por ejemplo, el asterisco dentro de corchetes no necesita escape porque ahí no tiene sentido como cuantificador.</p>
+        
+        <p>Por ejemplo:</p>
+        
+        <p><code>x*</code> representa "cero o más x".</p>
+        
+        <p><code>x\*</code> representa literalmente "x*".</p>
+         
+        <p>Ejemplo práctico: quieres un patrón que represente: barra invertida, espacio, asterisco, signo más, espacio, una palabra que empiece en mayúscula, espacio, signo más, asterisco, espacio, barra invertida.</p>
+        
+        <p>La expresión regular sería: <code>\\ \*\+ [A-Z][a-z]* \+\* \\</code></p>
+        
+        <p>Eso admite cadenas como "\ *+ Hola +* \".</p>
+      
+        <p>Algunos metacaracteres y construcciones útiles:</p>
+        
+        <p><strong>Circunflejo '^' dentro de corchetes</strong>: <code>"[^abc]"</code>. Ya lo vimos: significa "cualquier cosa MENOS a, b o c". ¡Ojo! Fuera de los corchetes tiene otro significado.</p>
+        
+        <p><strong>Comienzo y fin de línea</strong>: <code>"^...$"</code>. El '^' al principio indica "comienzo de línea" y el '$' al final indica "fin de línea". Útil para verificar que TODA la línea encaja con el patrón. Si los quieres usar literalmente, escápalos.</p>
+        
+        <p><strong>Punto '.'</strong>: representa cualquier carácter (pero solo uno). Si necesitas más, cuantifícalo.</p>
+        
+        <p>También hay atajos muy útiles:</p>
+        
+        <p><code>"\\d"</code> = un dígito. Igual que <code>"[0-9]"</code>.</p>
+        
+        <p><code>"\\D"</code> = cualquier cosa menos un dígito. Igual que <code>"[^0-9]"</code>.</p>
+        
+        <p><code>"\\s"</code> = un espacio en blanco (espacios, tabuladores, saltos de línea...).</p>
+        
+        <p><code>"\\S"</code> = cualquier cosa menos espacio en blanco.</p>
+        
+        <p><code>"\\w"</code> = letra, dígito o guion bajo. Igual que <code>"[a-zA-Z_0-9]"</code>.</p>
+        
+        <p>Puedes meter estos atajos dentro de corchetes. Por ejemplo, <code>"[\\dABC]"</code> es igual que <code>"[0-9ABC]"</code>.</p>
+       
+
+    </section>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
