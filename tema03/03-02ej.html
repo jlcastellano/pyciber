@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SESIÓN 3: Archivos, Expresiones Regulares y OS</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-okaidia.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <div>SESIÓN 3: Archivos, Expresiones Regulares y OS</div>
+    </header>
+
+    <section class="contenido-didactico">
+
+        <h1>BLOQUE 2: Expresiones Regulares</h1>
+
+        <h2>Extractor de IoCs</h2>
+
+        <pre><code class="language-python">#!/usr/bin/env python3
+"""
+Práctica: Extractor de IPs, emails y URLs de un archivo de texto
+"""
+
+import re
+import json
+from collections import Counter
+
+# Crear archivo de prueba
+contenido_log = """
+=== LOG DE SEGURIDAD - 2024-01-15 ===
+
+[10:00:01] Conexión entrante desde 192.168.1.100 (puerto 443)
+[10:00:02] Autenticación fallida para user@empresa.com desde 10.0.0.50
+[10:00:03] Intento de acceso a https://internal.empresa.com/admin
+[10:00:04] Email enviado a admin@empresa.com desde external@gmail.com
+[10:00:05] Descarga detectada: http://malware.bad-site.com/payload.exe
+[10:00:06] Conexión SSH desde 203.0.113.100 - usuario root
+[10:00:07] Request a https://api.empresa.com/v1/users
+[10:00:08] IP bloqueada: 185.220.101.1 (Tor exit node)
+[10:00:09] Alerta: 192.168.1.100 intentando acceso a /etc/passwd
+[10:00:10] Email sospechoso de phishing@scam-site.net
+[10:00:11] URL maliciosa detectada: https://phishing.fake-bank.com/login
+[10:00:12] Conexión desde 192.168.1.100 (múltiples intentos)
+[10:00:13] Notificación enviada a security-team@empresa.com
+[10:00:14] Acceso denegado para guest@temporal.org
+[10:00:15] Download blocked: http://malware.bad-site.com/trojan.zip
+"""
+
+with open("security_log.txt", "w") as f:
+    f.write(contenido_log)
+
+
+class ExtractorIoC:
+    """Extractor de Indicadores de Compromiso."""
+    
+    def __init__(self):
+        self.patrones = {
+            "ip": re.compile(r'\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b'),
+            "email": re.compile(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'),
+            "url": re.compile(r'https?://[^\s<>"{}|\\^`\[\]]+'),
+            "dominio": re.compile(r'\b(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}\b'),
+        }
+        
+        self.resultados = {}
+    
+    def extraer_de_archivo(self, ruta):
+        """Extrae IoCs de un archivo."""
+        with open(ruta, "r", encoding="utf-8") as f:
+            contenido = f.read()
+        
+        return self.extraer_de_texto(contenido)
+    
+    def extraer_de_texto(self, texto):
+        """Extrae IoCs de un texto."""
+        self.resultados = {}
+        
+        for tipo, patron in self.patrones.items():
+            matches = patron.findall(texto)
+            if matches:
+                self.resultados[tipo] = {
+                    "valores": list(set(matches)),
+                    "conteo": Counter(matches),
+                    "total": len(matches),
+                    "unicos": len(set(matches))
+                }
+        
+        return self.resultados
+    
+    def clasificar_ips(self):
+        """Clasifica las IPs encontradas."""
+        if "ip" not in self.resultados:
+            return {}
+        
+        clasificacion = {
+            "privadas": [],
+            "publicas": [],
+            "localhost": [],
+            "sospechosas": []
+        }
+        
+        # IPs conocidas como maliciosas (ejemplo)
+        ips_maliciosas = {"185.220.101.1", "203.0.113.100"}
+        
+        for ip in self.resultados["ip"]["valores"]:
+            if ip.startswith("127."):
+                clasificacion["localhost"].append(ip)
+            elif ip.startswith(("10.", "172.16.", "172.17.", "172.18.", 
+                               "172.19.", "172.20.", "172.21.", "172.22.",
+                               "172.23.", "172.24.", "172.25.", "172.26.",
+                               "172.27.", "172.28.", "172.29.", "172.30.",
+                               "172.31.", "192.168.")):
+                clasificacion["privadas"].append(ip)
+            elif ip in ips_maliciosas:
+                clasificacion["sospechosas"].append(ip)
+            else:
+                clasificacion["publicas"].append(ip)
+        
+        return clasificacion
+    
+    def clasificar_dominios(self):
+        """Clasifica los dominios/URLs encontrados."""
+        if "url" not in self.resultados:
+            return {}
+        
+        clasificacion = {
+            "internos": [],
+            "externos": [],
+            "sospechosos": []
+        }
+        
+        palabras_sospechosas = ["malware", "phishing", "bad-site", "scam", "fake"]
+        dominios_internos = ["empresa.com", "internal.empresa.com"]
+        
+        for url in self.resultados["url"]["valores"]:
+            es_sospechoso = any(palabra in url.lower() for palabra in palabras_sospechosas)
+            es_interno = any(dominio in url for dominio in dominios_internos)
+            
+            if es_sospechoso:
+                clasificacion["sospechosos"].append(url)
+            elif es_interno:
+                clasificacion["internos"].append(url)
+            else:
+                clasificacion["externos"].append(url)
+        
+        return clasificacion
+    
+    def generar_reporte(self, ruta_salida=None):
+        """Genera un reporte de los IoCs encontrados."""
+        reporte = []
+        reporte.append("=" * 60)
+        reporte.append("   REPORTE DE INDICADORES DE COMPROMISO (IoC)")
+        reporte.append("=" * 60)
+        
+        # Resumen
+        reporte.append("\n[*] RESUMEN:")
+        for tipo, datos in self.resultados.items():
+            reporte.append(f"    {tipo.upper()}: {datos['unicos']} únicos ({datos['total']} total)")
+        
+        # IPs
+        if "ip" in self.resultados:
+            reporte.append("\n[*] DIRECCIONES IP:")
+            clasificacion = self.clasificar_ips()
+            
+            if clasificacion["sospechosas"]:
+                reporte.append("    ⚠ SOSPECHOSAS:")
+                for ip in clasificacion["sospechosas"]:
+                    count = self.resultados["ip"]["conteo"][ip]
+                    reporte.append(f"      - {ip} ({count} ocurrencias)")
+            
+            if clasificacion["publicas"]:
+                reporte.append("    Públicas:")
+                for ip in clasificacion["publicas"]:
+                    reporte.append(f"      - {ip}")
+            
+            if clasificacion["privadas"]:
+                reporte.append("    Privadas:")
+                for ip in clasificacion["privadas"][:5]:
+                    count = self.resultados["ip"]["conteo"][ip]
+                    reporte.append(f"      - {ip} ({count} ocurrencias)")
+        
+        # URLs
+        if "url" in self.resultados:
+            reporte.append("\n[*] URLs:")
+            clasificacion = self.clasificar_dominios()
+            
+            if clasificacion["sospechosos"]:
+                reporte.append("    ⚠ SOSPECHOSAS:")
+                for url in clasificacion["sospechosos"]:
+                    reporte.append(f"      - {url}")
+            
+            if clasificacion["externos"]:
+                reporte.append("    Externos:")
+                for url in clasificacion["externos"]:
+                    reporte.append(f"      - {url}")
+        
+        # Emails
+        if "email" in self.resultados:
+            reporte.append("\n[*] EMAILS:")
+            for email in self.resultados["email"]["valores"]:
+                reporte.append(f"    - {email}")
+        
+        reporte.append("\n" + "=" * 60)
+        
+        texto_reporte = "\n".join(reporte)
+        
+        if ruta_salida:
+            with open(ruta_salida, "w") as f:
+                f.write(texto_reporte)
+        
+        return texto_reporte
+    
+    def exportar_json(self, ruta):
+        """Exporta los resultados en formato JSON."""
+        export = {
+            "iocs": {},
+            "clasificacion": {
+                "ips": self.clasificar_ips(),
+                "urls": self.clasificar_dominios()
+            }
+        }
+        
+        for tipo, datos in self.resultados.items():
+            export["iocs"][tipo] = datos["valores"]
+        
+        with open(ruta, "w") as f:
+            json.dump(export, f, indent=4)
+
+
+# ========================================
+# EJECUTAR EXTRACCIÓN
+# ========================================
+
+extractor = ExtractorIoC()
+extractor.extraer_de_archivo("security_log.txt")
+
+# Mostrar reporte
+print(extractor.generar_reporte())
+
+# Exportar a JSON
+extractor.exportar_json("iocs_extraidos.json")
+print("[+] IoCs exportados a: iocs_extraidos.json")</code></pre>
+
+    </section>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

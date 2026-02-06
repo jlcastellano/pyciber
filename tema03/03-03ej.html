@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SESIÓN 3: Archivos, Expresiones Regulares y OS</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-okaidia.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <div>SESIÓN 3: Archivos, Expresiones Regulares y OS</div>
+    </header>
+
+    <section class="contenido-didactico">
+ 
+        <h1>BLOQUE 3: Interacción con el Sistema Operativo</h1>
+
+        <h2>Script de Reconocimiento del Sistema</h2>
+
+        <pre><code class="language-python">#!/usr/bin/env python3
+"""
+Práctica: Script de reconocimiento básico del sistema
+Recopila información de red, usuarios y procesos
+"""
+
+import os
+import platform
+import subprocess
+import json
+import socket
+from datetime import datetime
+
+def ejecutar_comando(comando, shell=False, timeout=30):
+    """Ejecuta un comando y retorna la salida."""
+    try:
+        if isinstance(comando, str) and not shell:
+            comando = comando.split()
+        
+        resultado = subprocess.run(
+            comando,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            shell=shell
+        )
+        return resultado.stdout.strip() if resultado.returncode == 0 else None
+    except:
+        return None
+
+
+def obtener_info_sistema():
+    """Recopila información básica del sistema."""
+    return {
+        "hostname": platform.node(),
+        "sistema_operativo": platform.system(),
+        "version_os": platform.release(),
+        "version_detallada": platform.version(),
+        "arquitectura": platform.machine(),
+        "procesador": platform.processor(),
+        "python_version": platform.python_version(),
+    }
+
+
+def obtener_info_red():
+    """Recopila información de red."""
+    info_red = {
+        "hostname": socket.gethostname(),
+        "interfaces": [],
+        "dns_servers": [],
+        "gateway": None
+    }
+    
+    # Intentar obtener IP local
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        info_red["ip_local"] = s.getsockname()[0]
+        s.close()
+    except:
+        info_red["ip_local"] = "No disponible"
+    
+    # Interfaces de red
+    if platform.system() == "Linux":
+        salida = ejecutar_comando("ip addr")
+        if salida:
+            lineas = salida.split('\n')
+            interfaz_actual = None
+            for linea in lineas:
+                if ': ' in linea and not linea.startswith(' '):
+                    partes = linea.split(': ')
+                    if len(partes) >= 2:
+                        interfaz_actual = partes[1].split('@')[0]
+                elif 'inet ' in linea and interfaz_actual:
+                    ip = linea.strip().split()[1]
+                    info_red["interfaces"].append({
+                        "nombre": interfaz_actual,
+                        "ip": ip
+                    })
+        
+        # DNS
+        try:
+            with open("/etc/resolv.conf") as f:
+                for linea in f:
+                    if linea.startswith("nameserver"):
+                        info_red["dns_servers"].append(linea.split()[1])
+        except:
+            pass
+        
+        # Gateway
+        salida = ejecutar_comando("ip route")
+        if salida:
+            for linea in salida.split('\n'):
+                if linea.startswith("default"):
+                    partes = linea.split()
+                    if len(partes) >= 3:
+                        info_red["gateway"] = partes[2]
+                    break
+    
+    elif platform.system() == "Windows":
+        salida = ejecutar_comando("ipconfig /all", shell=True)
+        if salida:
+            info_red["raw_output"] = salida[:1000]
+    
+    return info_red
+
+
+def obtener_usuarios():
+    """Obtiene información de usuarios del sistema."""
+    usuarios = {
+        "usuario_actual": os.environ.get("USER", os.environ.get("USERNAME", "Desconocido")),
+        "home": os.environ.get("HOME", os.environ.get("USERPROFILE", "Desconocido")),
+        "shell": os.environ.get("SHELL", "Desconocido"),
+        "usuarios_sistema": []
+    }
+    
+    if platform.system() == "Linux":
+        try:
+            with open("/etc/passwd") as f:
+                for linea in f:
+                    partes = linea.strip().split(':')
+                    if len(partes) >= 7:
+                        uid = int(partes[2])
+                        # Solo usuarios con UID >= 1000 o root
+                        if uid >= 1000 or uid == 0:
+                            usuarios["usuarios_sistema"].append({
+                                "nombre": partes[0],
+                                "uid": uid,
+                                "home": partes[5],
+                                "shell": partes[6]
+                            })
+        except:
+            pass
+        
+        # Usuarios logueados
+        salida = ejecutar_comando("who")
+        if salida:
+            usuarios["usuarios_logueados"] = [
+                linea.split()[0] for linea in salida.split('\n') if linea
+            ]
+    
+    return usuarios
+
+
+def obtener_procesos():
+    """Obtiene lista de procesos en ejecución."""
+    procesos = {
+        "total": 0,
+        "lista": []
+    }
+    
+    if platform.system() == "Linux":
+        salida = ejecutar_comando("ps aux")
+        if salida:
+            lineas = salida.split('\n')[1:]  # Saltar header
+            procesos["total"] = len(lineas)
+            
+            # Procesos más relevantes (por uso de CPU/memoria)
+            for linea in lineas[:20]:
+                partes = linea.split(None, 10)
+                if len(partes) >= 11:
+                    procesos["lista"].append({
+                        "usuario": partes[0],
+                        "pid": partes[1],
+                        "cpu": partes[2],
+                        "memoria": partes[3],
+                        "comando": partes[10][:50]
+                    })
+    
+    elif platform.system() == "Windows":
+        salida = ejecutar_comando("tasklist", shell=True)
+        if salida:
+            lineas = salida.split('\n')[3:]
+            procesos["total"] = len([l for l in lineas if l.strip()])
+    
+    return procesos
+
+
+def obtener_puertos_abiertos():
+    """Obtiene puertos abiertos/escuchando."""
+    puertos = []
+    
+    if platform.system() == "Linux":
+        salida = ejecutar_comando("ss -tuln")
+        if salida:
+            for linea in salida.split('\n')[1:]:
+                partes = linea.split()
+                if len(partes) >= 5:
+                    estado = partes[1] if len(partes) > 1 else "UNKNOWN"
+                    direccion = partes[4] if len(partes) > 4 else ""
+                    if "LISTEN" in linea or estado == "UNCONN":
+                        puertos.append({
+                            "protocolo": partes[0],
+                            "direccion": direccion,
+                            "estado": estado
+                        })
+    
+    elif platform.system() == "Windows":
+        salida = ejecutar_comando("netstat -an", shell=True)
+        if salida:
+            for linea in salida.split('\n'):
+                if "LISTENING" in linea or "ESTABLISHED" in linea:
+                    partes = linea.split()
+                    if len(partes) >= 4:
+                        puertos.append({
+                            "protocolo": partes[0],
+                            "local": partes[1],
+                            "estado": partes[3] if len(partes) > 3 else ""
+                        })
+    
+    return puertos[:20]  # Limitar a 20
+
+
+def verificar_herramientas():
+    """Verifica qué herramientas de seguridad están instaladas."""
+    import shutil
+    
+    herramientas = [
+        "nmap", "nikto", "dirb", "gobuster", "hydra",
+        "john", "hashcat", "sqlmap", "metasploit",
+        "wireshark", "tcpdump", "netcat", "nc",
+        "curl", "wget", "ssh", "openssl"
+    ]
+    
+    instaladas = {}
+    for herramienta in herramientas:
+        ruta = shutil.which(herramienta)
+        instaladas[herramienta] = ruta if ruta else False
+    
+    return instaladas
+
+
+def generar_reporte():
+    """Genera el reporte completo de reconocimiento."""
+    print("=" * 60)
+    print("   REPORTE DE RECONOCIMIENTO DEL SISTEMA")
+    print(f"   Fecha: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print("=" * 60)
+    
+    # Sistema
+    print("\n[*] INFORMACIÓN DEL SISTEMA:")
+    sistema = obtener_info_sistema()
+    for clave, valor in sistema.items():
+        print(f"    {clave}: {valor}")
+    
+    # Red
+    print("\n[*] INFORMACIÓN DE RED:")
+    red = obtener_info_red()
+    print(f"    IP Local: {red.get('ip_local', 'N/A')}")
+    print(f"    Gateway: {red.get('gateway', 'N/A')}")
+    print(f"    DNS: {', '.join(red.get('dns_servers', [])) or 'N/A'}")
+    
+    if red.get("interfaces"):
+        print("    Interfaces:")
+        for iface in red["interfaces"]:
+            print(f"      - {iface['nombre']}: {iface['ip']}")
+    
+    # Usuarios
+    print("\n[*] USUARIOS:")
+    usuarios = obtener_usuarios()
+    print(f"    Usuario actual: {usuarios['usuario_actual']}")
+    print(f"    Home: {usuarios['home']}")
+    print(f"    Shell: {usuarios['shell']}")
+    
+    if usuarios.get("usuarios_logueados"):
+        print(f"    Usuarios logueados: {', '.join(usuarios['usuarios_logueados'])}")
+    
+    # Procesos
+    print("\n[*] PROCESOS:")
+    procesos = obtener_procesos()
+    print(f"    Total procesos: {procesos['total']}")
+    
+    # Puertos
+    print("\n[*] PUERTOS EN ESCUCHA:")
+    puertos = obtener_puertos_abiertos()
+    for puerto in puertos[:10]:
+        print(f"    {puerto.get('protocolo', 'N/A')}: {puerto.get('direccion', puerto.get('local', 'N/A'))}")
+    
+    # Herramientas
+    print("\n[*] HERRAMIENTAS DE SEGURIDAD:")
+    herramientas = verificar_herramientas()
+    instaladas = [h for h, r in herramientas.items() if r]
+    no_instaladas = [h for h, r in herramientas.items() if not r]
+    
+    print(f"    Instaladas: {', '.join(instaladas) if instaladas else 'Ninguna'}")
+    print(f"    No encontradas: {', '.join(no_instaladas[:5])}...")
+    
+    print("\n" + "=" * 60)
+    
+    # Exportar a JSON
+    reporte = {
+        "fecha": datetime.now().isoformat(),
+        "sistema": sistema,
+        "red": red,
+        "usuarios": usuarios,
+        "procesos": procesos,
+        "puertos": puertos,
+        "herramientas": herramientas
+    }
+    
+    with open("reporte_sistema.json", "w") as f:
+        json.dump(reporte, f, indent=4, default=str)
+    
+    print("[+] Reporte exportado a: reporte_sistema.json")
+    
+    return reporte
+
+
+# ========================================
+# EJECUTAR
+# ========================================
+
+if __name__ == "__main__":
+    reporte = generar_reporte()</code></pre>
+
+
+
+    </section>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
