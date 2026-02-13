@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SESIÓN 4: Networking y Sockets</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-okaidia.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <div>SESIÓN 4: Networking y Sockets</div>
+    </header>
+
+    <section class="contenido-didactico">
+         <h1>BLOQUE 2: Aplicaciones de Red</h1>
+
+        <h2>2.1 Escáner de Puertos TCP Básico</h2>
+
+        <pre><code class="language-python">#!/usr/bin/env python3
+"""
+Escáner de puertos TCP básico
+"""
+
+import socket
+import sys
+from datetime import datetime
+
+# ========================================
+# ESCANEO DE PUERTO INDIVIDUAL
+# ========================================
+
+def escanear_puerto(host, puerto, timeout=1):
+    """
+    Escanea un puerto individual.
+    
+    Returns:
+        tuple: (puerto, estado, banner)
+        estado: 'open', 'closed', 'filtered'
+    """
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(timeout)
+        
+        # Intentar conexión
+        resultado = sock.connect_ex((host, puerto))
+        
+        if resultado == 0:
+            # Puerto abierto - intentar obtener banner
+            banner = obtener_banner(sock, puerto)
+            sock.close()
+            return (puerto, 'open', banner)
+        else:
+            sock.close()
+            return (puerto, 'closed', None)
+    
+    except socket.timeout:
+        return (puerto, 'filtered', None)
+    except socket.error as e:
+        return (puerto, 'error', str(e))
+    except Exception as e:
+        return (puerto, 'error', str(e))
+
+
+def obtener_banner(sock, puerto):
+    """Intenta obtener el banner de un servicio."""
+    try:
+        # Algunos servicios envían banner al conectar
+        sock.settimeout(2)
+        
+        # Para HTTP, necesitamos enviar una petición
+        if puerto in [80, 8080, 8000, 8888]:
+            sock.send(b"HEAD / HTTP/1.0\r\n\r\n")
+        elif puerto == 443:
+            return "HTTPS (SSL/TLS)"
+        
+        banner = sock.recv(1024)
+        return banner.decode('utf-8', errors='ignore').strip()[:100]
+    
+    except:
+        return None
+
+
+# ========================================
+# ESCÁNER SIMPLE
+# ========================================
+
+def escanear_puertos_simple(host, puertos, timeout=1):
+    """
+    Escanea una lista de puertos de forma secuencial.
+    """
+    print(f"\n{'='*60}")
+    print(f"  ESCÁNER DE PUERTOS - {host}")
+    print(f"  Inicio: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"{'='*60}\n")
+    
+    # Resolver hostname
+    try:
+        ip = socket.gethostbyname(host)
+        if ip != host:
+            print(f"[*] Host: {host} ({ip})")
+        else:
+            print(f"[*] Host: {host}")
+    except socket.gaierror:
+        print(f"[-] No se pudo resolver: {host}")
+        return []
+    
+    print(f"[*] Puertos a escanear: {len(puertos)}")
+    print(f"[*] Timeout: {timeout}s\n")
+    
+    puertos_abiertos = []
+    
+    for i, puerto in enumerate(puertos, 1):
+        puerto_num, estado, banner = escanear_puerto(ip, puerto, timeout)
+        
+        # Mostrar progreso
+        progreso = f"[{i}/{len(puertos)}]"
+        
+        if estado == 'open':
+            puertos_abiertos.append((puerto_num, banner))
+            servicio = socket.getservbyport(puerto_num, 'tcp') if puerto_num < 1024 else 'unknown'
+            print(f"{progreso} Puerto {puerto_num}/tcp ABIERTO ({servicio})")
+            if banner:
+                print(f"        └─ Banner: {banner[:60]}")
+    
+    # Resumen
+    print(f"\n{'='*60}")
+    print(f"  RESUMEN: {len(puertos_abiertos)} puertos abiertos de {len(puertos)} escaneados")
+    print(f"  Fin: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"{'='*60}\n")
+    
+    return puertos_abiertos
+
+
+# ========================================
+# PUERTOS COMUNES
+# ========================================
+
+PUERTOS_TOP_100 = [
+    7, 20, 21, 22, 23, 25, 53, 69, 80, 88,
+    110, 111, 119, 123, 135, 137, 138, 139, 143, 161,
+    162, 179, 194, 389, 443, 445, 464, 465, 514, 515,
+    587, 593, 636, 691, 993, 995, 1025, 1026, 1027, 1028,
+    1029, 1110, 1433, 1434, 1521, 1720, 1723, 1755, 1900, 2000,
+    2001, 2049, 2121, 2717, 3000, 3128, 3306, 3389, 3986, 4899,
+    5000, 5009, 5051, 5060, 5101, 5190, 5357, 5432, 5631, 5666,
+    5800, 5900, 6000, 6001, 6646, 7070, 8000, 8008, 8080, 8443,
+    8888, 9100, 9999, 10000, 32768, 49152, 49153, 49154, 49155, 49156
+]
+
+PUERTOS_CRITICOS = [
+    21,    # FTP
+    22,    # SSH
+    23,    # Telnet
+    25,    # SMTP
+    53,    # DNS
+    80,    # HTTP
+    110,   # POP3
+    135,   # MSRPC
+    139,   # NetBIOS
+    143,   # IMAP
+    443,   # HTTPS
+    445,   # SMB
+    993,   # IMAPS
+    995,   # POP3S
+    1433,  # MSSQL
+    1521,  # Oracle
+    3306,  # MySQL
+    3389,  # RDP
+    5432,  # PostgreSQL
+    5900,  # VNC
+    6379,  # Redis
+    8080,  # HTTP Alt
+    27017, # MongoDB
+]
+
+
+# ========================================
+# MAIN
+# ========================================
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print("Uso: python escaner.py <host> [puerto_inicio] [puerto_fin]")
+        print("     python escaner.py <host> --top100")
+        print("     python escaner.py <host> --criticos")
+        print("\nEjemplos:")
+        print("  python escaner.py 192.168.1.1")
+        print("  python escaner.py scanme.nmap.org 1 1000")
+        print("  python escaner.py 10.0.0.1 --top100")
+        sys.exit(1)
+    
+    host = sys.argv[1]
+    
+    if len(sys.argv) == 2:
+        puertos = PUERTOS_CRITICOS
+    elif sys.argv[2] == "--top100":
+        puertos = PUERTOS_TOP_100
+    elif sys.argv[2] == "--criticos":
+        puertos = PUERTOS_CRITICOS
+    else:
+        inicio = int(sys.argv[2])
+        fin = int(sys.argv[3]) if len(sys.argv) > 3 else inicio
+        puertos = range(inicio, fin + 1)
+    
+    try:
+        escanear_puertos_simple(host, puertos)
+    except KeyboardInterrupt:
+        print("\n[!] Escaneo cancelado por el usuario")</code></pre>
+
+        <h2>2.2 Banner Grabbing</h2>
+
+        <p>El <strong>banner grabbing</strong> es una técnica para obtener información de servicios de red mediante la captura de banners que los servicios envían al establecer conexión.</p>
+
+        <pre><code class="language-python">#!/usr/bin/env python3
+"""
+Banner Grabbing: obtención de información de servicios
+"""
+
+import socket
+import ssl
+
+# ========================================
+# TÉCNICAS DE BANNER GRABBING
+# ========================================
+
+def grab_banner_tcp(host, puerto, timeout=5):
+    """
+    Obtiene el banner de un servicio TCP.
+    Algunos servicios envían banner al conectar.
+    """
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(timeout)
+        sock.connect((host, puerto))
+        
+        # Esperar banner automático
+        sock.settimeout(3)
+        try:
+            banner = sock.recv(1024)
+            if banner:
+                sock.close()
+                return banner.decode('utf-8', errors='ignore').strip()
+        except socket.timeout:
+            pass
+        
+        sock.close()
+        return None
+    
+    except Exception as e:
+        return f"Error: {e}"
+
+
+def grab_banner_http(host, puerto=80, timeout=5):
+    """Obtiene información de un servidor HTTP."""
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(timeout)
+        sock.connect((host, puerto))
+        
+        # Enviar petición HTTP
+        request = f"HEAD / HTTP/1.1\r\nHost: {host}\r\nConnection: close\r\n\r\n"
+        sock.send(request.encode())
+        
+        response = sock.recv(4096).decode('utf-8', errors='ignore')
+        sock.close()
+        
+        # Parsear headers
+        info = {
+            'raw': response[:500],
+            'server': None,
+            'powered_by': None,
+            'status': None
+        }
+        
+        for linea in response.split('\r\n'):
+            linea_lower = linea.lower()
+            if linea.startswith('HTTP/'):
+                info['status'] = linea
+            elif linea_lower.startswith('server:'):
+                info['server'] = linea.split(':', 1)[1].strip()
+            elif linea_lower.startswith('x-powered-by:'):
+                info['powered_by'] = linea.split(':', 1)[1].strip()
+        
+        return info
+    
+    except Exception as e:
+        return {'error': str(e)}
+
+
+def grab_banner_https(host, puerto=443, timeout=5):
+    """Obtiene información de un servidor HTTPS incluyendo certificado."""
+    try:
+        context = ssl.create_default_context()
+        context.check_hostname = False
+        context.verify_mode = ssl.CERT_NONE
+        
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(timeout)
+        
+        ssl_sock = context.wrap_socket(sock, server_hostname=host)
+        ssl_sock.connect((host, puerto))
+        
+        # Información del certificado
+        cert = ssl_sock.getpeercert(binary_form=False)
+        
+        info = {
+            'ssl_version': ssl_sock.version(),
+            'cipher': ssl_sock.cipher(),
+        }
+        
+        if cert:
+            info['subject'] = dict(x[0] for x in cert.get('subject', []))
+            info['issuer'] = dict(x[0] for x in cert.get('issuer', []))
+            info['notBefore'] = cert.get('notBefore')
+            info['notAfter'] = cert.get('notAfter')
+        
+        # También obtener banner HTTP
+        request = f"HEAD / HTTP/1.1\r\nHost: {host}\r\nConnection: close\r\n\r\n"
+        ssl_sock.send(request.encode())
+        response = ssl_sock.recv(4096).decode('utf-8', errors='ignore')
+        
+        for linea in response.split('\r\n'):
+            if linea.lower().startswith('server:'):
+                info['server'] = linea.split(':', 1)[1].strip()
+        
+        ssl_sock.close()
+        return info
+    
+    except Exception as e:
+        return {'error': str(e)}
+
+
+def grab_banner_ftp(host, puerto=21, timeout=5):
+    """Obtiene banner de servidor FTP."""
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(timeout)
+        sock.connect((host, puerto))
+        
+        banner = sock.recv(1024).decode('utf-8', errors='ignore').strip()
+        sock.close()
+        
+        return {'banner': banner, 'puerto': puerto}
+    
+    except Exception as e:
+        return {'error': str(e)}
+
+
+def grab_banner_ssh(host, puerto=22, timeout=5):
+    """Obtiene banner de servidor SSH."""
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(timeout)
+        sock.connect((host, puerto))
+        
+        banner = sock.recv(1024).decode('utf-8', errors='ignore').strip()
+        sock.close()
+        
+        # Parsear versión SSH
+        info = {'banner': banner}
+        if banner.startswith('SSH-'):
+            partes = banner.split('-')
+            if len(partes) >= 3:
+                info['version_protocolo'] = partes[1]
+                info['software'] = '-'.join(partes[2:])
+        
+        return info
+    
+    except Exception as e:
+        return {'error': str(e)}
+
+
+def grab_banner_smtp(host, puerto=25, timeout=5):
+    """Obtiene banner de servidor SMTP."""
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(timeout)
+        sock.connect((host, puerto))
+        
+        banner = sock.recv(1024).decode('utf-8', errors='ignore').strip()
+        
+        # Enviar EHLO para más información
+        sock.send(b"EHLO test\r\n")
+        ehlo_response = sock.recv(2048).decode('utf-8', errors='ignore')
+        
+        sock.send(b"QUIT\r\n")
+        sock.close()
+        
+        return {
+            'banner': banner,
+            'ehlo_response': ehlo_response.strip()
+        }
+    
+    except Exception as e:
+        return {'error': str(e)}
+
+
+# ========================================
+# GRABBER UNIVERSAL
+# ========================================
+
+def banner_grabber(host, puerto, timeout=5):
+    """
+    Determina el tipo de servicio e intenta obtener el banner.
+    """
+    # Servicios conocidos por puerto
+    grabbers = {
+        21: ('FTP', grab_banner_ftp),
+        22: ('SSH', grab_banner_ssh),
+        25: ('SMTP', grab_banner_smtp),
+        80: ('HTTP', grab_banner_http),
+        443: ('HTTPS', grab_banner_https),
+        8080: ('HTTP', grab_banner_http),
+        8443: ('HTTPS', grab_banner_https),
+    }
+    
+    if puerto in grabbers:
+        nombre, funcion = grabbers[puerto]
+        resultado = funcion(host, puerto, timeout)
+        resultado['servicio_detectado'] = nombre
+        return resultado
+    
+    # Para otros puertos, intentar banner genérico
+    banner = grab_banner_tcp(host, puerto, timeout)
+    return {
+        'servicio_detectado': 'Desconocido',
+        'banner': banner
+    }
+
+
+# ========================================
+# DEMOSTRACIÓN
+# ========================================
+
+def demo_banner_grabbing(host):
+    """Demostración de banner grabbing en puertos comunes."""
+    print(f"\n{'='*60}")
+    print(f"  BANNER GRABBING - {host}")
+    print(f"{'='*60}\n")
+    
+    puertos_prueba = [21, 22, 25, 80, 443, 8080]
+    
+    for puerto in puertos_prueba:
+        print(f"[*] Probando puerto {puerto}...")
+        resultado = banner_grabber(host, puerto, timeout=3)
+        
+        if 'error' in resultado:
+            print(f"    [-] Error: {resultado['error'][:50]}")
+        else:
+            print(f"    [+] Servicio: {resultado.get('servicio_detectado', 'N/A')}")
+            if 'banner' in resultado and resultado['banner']:
+                banner_limpio = resultado['banner'][:80].replace('\n', ' ')
+                print(f"    [+] Banner: {banner_limpio}")
+            if 'server' in resultado:
+                print(f"    [+] Server: {resultado['server']}")
+            if 'ssl_version' in resultado:
+                print(f"    [+] SSL: {resultado['ssl_version']}")
+        print()
+
+
+if __name__ == "__main__":
+    import sys
+    
+    if len(sys.argv) < 2:
+        print("Uso: python banner_grabber.py <host> [puerto]")
+        sys.exit(1)
+    
+    host = sys.argv[1]
+    
+    if len(sys.argv) > 2:
+        puerto = int(sys.argv[2])
+        resultado = banner_grabber(host, puerto)
+        print(f"\nResultado para {host}:{puerto}")
+        for clave, valor in resultado.items():
+            print(f"  {clave}: {valor}")
+    else:
+        demo_banner_grabbing(host)</code></pre>
+
+        <h2>2.3 Escáner de Puertos Multihilo</h2>
+
+        <p>El uso de <strong>multithreading</strong> permite escanear múltiples puertos simultáneamente, mejorando significativamente la velocidad del escaneo.</p>
+
+        <blockquote>
+            <strong>Nota:</strong> El multithreading es especialmente útil en operaciones de I/O como el escaneo de puertos, donde el tiempo de espera es el factor limitante principal.
+        </blockquote>
+
+        <details>
+            <summary>¿Cuál es la diferencia entre threading.Thread y ThreadPoolExecutor?</summary>
+            <p><code>threading.Thread</code> requiere gestión manual de hilos, mientras que <code>ThreadPoolExecutor</code> proporciona una interfaz de alto nivel que gestiona automáticamente un pool de workers, facilitando el manejo de múltiples tareas concurrentes.</p>
+        </details>
+
+        <pre><code class="language-python">#!/usr/bin/env python3
+"""
+Escáner de puertos TCP con multithreading
+"""
+
+import socket
+import threading
+import queue
+import sys
+from datetime import datetime
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
+# ========================================
+# ESCÁNER CON THREADING BÁSICO
+# ========================================
+
+class EscanerPuertosThreading:
+    """Escáner de puertos usando threading y queue."""
+    
+    def __init__(self, host, timeout=1, hilos=100):
+        self.host = host
+        self.timeout = timeout
+        self.num_hilos = hilos
+        self.cola_puertos = queue.Queue()
+        self.resultados = []
+        self.lock = threading.Lock()
+        self.puertos_escaneados = 0
+        self.total_puertos = 0
+    
+    def escanear_puerto(self, puerto):
+        """Escanea un puerto individual."""
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(self.timeout)
+            resultado = sock.connect_ex((self.host, puerto))
+            sock.close()
+            return resultado == 0
+        except:
+            return False
+    
+    def worker(self):
+        """Hilo trabajador que procesa puertos de la cola."""
+        while True:
+            try:
+                puerto = self.cola_puertos.get(timeout=1)
+            except queue.Empty:
+                break
+            
+            if self.escanear_puerto(puerto):
+                with self.lock:
+                    self.resultados.append(puerto)
+            
+            with self.lock:
+                self.puertos_escaneados += 1
+            
+            self.cola_puertos.task_done()
+    
+    def escanear(self, puertos):
+        """Ejecuta el escaneo de puertos."""
+        self.total_puertos = len(puertos)
+        
+        # Llenar la cola con puertos
+        for puerto in puertos:
+            self.cola_puertos.put(puerto)
+        
+        # Crear y ejecutar hilos
+        hilos = []
+        for _ in range(min(self.num_hilos, self.total_puertos)):
+            t = threading.Thread(target=self.worker, daemon=True)
+            t.start()
+            hilos.append(t)
+        
+        # Esperar a que termine
+        self.cola_puertos.join()
+        
+        return sorted(self.resultados)
+
+
+# ========================================
+# ESCÁNER CON ThreadPoolExecutor
+# ========================================
+
+class EscanerPuertosPool:
+    """Escáner usando ThreadPoolExecutor (más moderno)."""
+    
+    def __init__(self, host, timeout=1, max_workers=100):
+        self.host = host
+        self.timeout = timeout
+        self.max_workers = max_workers
+    
+    def escanear_puerto(self, puerto):
+        """Escanea un puerto y retorna resultado."""
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(self.timeout)
+            resultado = sock.connect_ex((self.host, puerto))
+            
+            banner = None
+            if resultado == 0:
+                try:
+                    sock.settimeout(2)
+                    banner = sock.recv(1024).decode('utf-8', errors='ignore').strip()[:100]
+                except:
+                    pass
+            
+            sock.close()
+            
+            return {
+                'puerto': puerto,
+                'abierto': resultado == 0,
+                'banner': banner
+            }
+        except Exception as e:
+            return {
+                'puerto': puerto,
+                'abierto': False,
+                'error': str(e)
+            }
+    
+    def escanear(self, puertos, callback_progreso=None):
+        """Ejecuta el escaneo con ThreadPoolExecutor."""
+        resultados = []
+        total = len(puertos)
+        completados = 0
+        
+        with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+            # Enviar todas las tareas
+            futures = {executor.submit(self.escanear_puerto, p): p for p in puertos}
+            
+            # Procesar resultados a medida que completan
+            for future in as_completed(futures):
+                resultado = future.result()
+                completados += 1
+                
+                if resultado['abierto']:
+                    resultados.append(resultado)
+                
+                if callback_progreso:
+                    callback_progreso(completados, total, resultado)
+        
+        return sorted(resultados, key=lambda x: x['puerto'])
+
+
+# ========================================
+# ESCÁNER COMPLETO
+# ========================================
+
+def escanear_con_progreso(host, puertos, timeout=1, hilos=100):
+    """Escaneo con barra de progreso."""
+    print(f"\n{'='*60}")
+    print(f"  ESCÁNER DE PUERTOS MULTIHILO")
+    print(f"{'='*60}")
+    
+    # Resolver host
+    try:
+        ip = socket.gethostbyname(host)
+        print(f"\n[*] Objetivo: {host} ({ip})")
+    except socket.gaierror:
+        print(f"[-] No se pudo resolver: {host}")
+        return []
+    
+    print(f"[*] Puertos: {min(puertos)}-{max(puertos)} ({len(puertos)} total)")
+    print(f"[*] Hilos: {hilos}")
+    print(f"[*] Timeout: {timeout}s")
+    
+    inicio = datetime.now()
+    print(f"[*] Inicio: {inicio.strftime('%H:%M:%S')}\n")
+    
+    # Variables para progreso
+    puertos_abiertos = []
+    ultimo_porcentaje = 0
+    
+    def mostrar_progreso(completados, total, resultado):
+        nonlocal ultimo_porcentaje, puertos_abiertos
+        
+        porcentaje = int(completados * 100 / total)
+        
+        if resultado['abierto']:
+            puerto = resultado['puerto']
+            try:
+                servicio = socket.getservbyport(puerto, 'tcp')
+            except:
+                servicio = 'unknown'
+            
+            puertos_abiertos.append(resultado)
+            print(f"\r[+] Puerto {puerto}/tcp ABIERTO ({servicio})           ")
+        
+        # Mostrar progreso cada 5%
+        if porcentaje >= ultimo_porcentaje + 5:
+            barra = '#' * (porcentaje // 5) + '-' * (20 - porcentaje // 5)
+            print(f"\r[{barra}] {porcentaje}% ({completados}/{total})    ", end='', flush=True)
+            ultimo_porcentaje = porcentaje
+    
+    # Ejecutar escaneo
+    escaner = EscanerPuertosPool(ip, timeout=timeout, max_workers=hilos)
+    resultados = escaner.escanear(puertos, callback_progreso=mostrar_progreso)
+    
+    fin = datetime.now()
+    duracion = (fin - inicio).total_seconds()
+    
+    # Resumen
+    print(f"\n\n{'='*60}")
+    print(f"  RESULTADOS")
+    print(f"{'='*60}")
+    
+    if resultados:
+        print(f"\n[+] Puertos abiertos: {len(resultados)}\n")
+        print(f"{'PUERTO':<10} {'ESTADO':<10} {'SERVICIO':<15} {'BANNER'}")
+        print("-" * 60)
+        
+        for r in resultados:
+            puerto = r['puerto']
+            try:
+                servicio = socket.getservbyport(puerto, 'tcp')
+            except:
+                servicio = 'unknown'
+            
+            banner = r.get('banner', '')[:30] if r.get('banner') else ''
+            print(f"{puerto:<10} {'open':<10} {servicio:<15} {banner}")
+    else:
+        print("\n[-] No se encontraron puertos abiertos")
+    
+    print(f"\n[*] Duración: {duracion:.2f} segundos")
+    print(f"[*] Velocidad: {len(puertos)/duracion:.0f} puertos/segundo")
+    print(f"{'='*60}\n")
+    
+    return resultados
+
+
+# ========================================
+# ESCANEOS PREDEFINIDOS
+# ========================================
+
+ESCANEO_RAPIDO = [21, 22, 23, 25, 53, 80, 110, 111, 135, 139, 
+                  143, 443, 445, 993, 995, 1723, 3306, 3389, 
+                  5900, 8080]
+
+ESCANEO_TOP_100 = list(range(1, 101)) + [
+    110, 111, 135, 139, 143, 443, 445, 993, 995,
+    1433, 1521, 1723, 3306, 3389, 5432, 5900, 6379,
+    8000, 8080, 8443, 8888, 9090, 27017
+]
+
+ESCANEO_COMPLETO = list(range(1, 1025))  # Puertos privilegiados
+ESCANEO_TOTAL = list(range(1, 65536))    # Todos los puertos
+
+
+# ========================================
+# MAIN
+# ========================================
+
+if __name__ == "__main__":
+    print("""
+╔═══════════════════════════════════════════════════════════╗
+║          ESCÁNER DE PUERTOS TCP MULTIHILO                 ║
+╠═══════════════════════════════════════════════════════════╣
+║  Uso: python escaner_multihilo.py <host> [opciones]       ║
+║                                                           ║
+║  Opciones de rango:                                       ║
+║    -p 1-1000      Rango de puertos                        ║
+║    --top20        Puertos más comunes (20)                ║
+║    --top100       Top 100 puertos                         ║
+║    --full         Puertos 1-1024                          ║
+║                                                           ║
+║  Opciones adicionales:                                    ║
+║    -t, --threads  Número de hilos (default: 100)          ║
+║    --timeout      Timeout en segundos (default: 1)        ║
+╚═══════════════════════════════════════════════════════════╝
+""")
+    
+    if len(sys.argv) < 2:
+        print("Ejemplo: python escaner_multihilo.py scanme.nmap.org --top20")
+        sys.exit(1)
+    
+    host = sys.argv[1]
+    puertos = ESCANEO_RAPIDO  # Default
+    hilos = 100
+    timeout = 1
+    
+    # Parsear argumentos
+    i = 2
+    while i < len(sys.argv):
+        arg = sys.argv[i]
+        
+        if arg == '-p' and i + 1 < len(sys.argv):
+            rango = sys.argv[i + 1]
+            if '-' in rango:
+                inicio, fin = map(int, rango.split('-'))
+                puertos = list(range(inicio, fin + 1))
+            else:
+                puertos = [int(rango)]
+            i += 2
+        elif arg == '--top20':
+            puertos = ESCANEO_RAPIDO
+            i += 1
+        elif arg == '--top100':
+            puertos = ESCANEO_TOP_100
+            i += 1
+        elif arg == '--full':
+            puertos = ESCANEO_COMPLETO
+            i += 1
+        elif arg in ['-t', '--threads'] and i + 1 < len(sys.argv):
+            hilos = int(sys.argv[i + 1])
+            i += 2
+        elif arg == '--timeout' and i + 1 < len(sys.argv):
+            timeout = float(sys.argv[i + 1])
+            i += 2
+        else:
+            i += 1
+    
+    try:
+        escanear_con_progreso(host, puertos, timeout=timeout, hilos=hilos)
+    except KeyboardInterrupt:
+        print("\n\n[!] Escaneo cancelado por el usuario")
+    except Exception as e:
+        print(f"\n[-] Error: {e}")</code></pre>
+
+    </section>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SESIÓN 4: Networking y Sockets</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-okaidia.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <div>SESIÓN 4: Networking y Sockets</div>
+    </header>
+
+    <section class="contenido-didactico">
+ 
+        <h2>Chat Cliente-Servidor TCP</h2>
+
+        <p>Esta práctica implementa un sistema de chat completo con servidor multicliente y comandos integrados.</p>
+
+        <pre><code class="language-python">#!/usr/bin/env python3
+"""
+Práctica: Chat simple Cliente-Servidor TCP
+"""
+
+import socket
+import threading
+import sys
+from datetime import datetime
+
+# ========================================
+# SERVIDOR DE CHAT
+# ========================================
+
+class ServidorChat:
+    """Servidor de chat TCP que maneja múltiples clientes."""
+    
+    def __init__(self, host='0.0.0.0', puerto=5555):
+        self.host = host
+        self.puerto = puerto
+        self.servidor = None
+        self.clientes = {}  # {socket: nombre}
+        self.activo = True
+    
+    def log(self, mensaje):
+        """Imprime mensaje con timestamp."""
+        timestamp = datetime.now().strftime("%H:%M:%S")
+        print(f"[{timestamp}] {mensaje}")
+    
+    def broadcast(self, mensaje, excluir=None):
+        """Envía mensaje a todos los clientes."""
+        for cliente in list(self.clientes.keys()):
+            if cliente != excluir:
+                try:
+                    cliente.send(mensaje.encode('utf-8'))
+                except:
+                    self.desconectar_cliente(cliente)
+    
+    def desconectar_cliente(self, cliente):
+        """Desconecta un cliente."""
+        if cliente in self.clientes:
+            nombre = self.clientes[cliente]
+            del self.clientes[cliente]
+            try:
+                cliente.close()
+            except:
+                pass
+            self.log(f"{nombre} se ha desconectado")
+            self.broadcast(f"[SERVIDOR] {nombre} ha abandonado el chat")
+    
+    def manejar_cliente(self, cliente, direccion):
+        """Maneja la comunicación con un cliente."""
+        try:
+            # Solicitar nombre
+            cliente.send("Ingresa tu nombre: ".encode('utf-8'))
+            nombre = cliente.recv(1024).decode('utf-8').strip()
+            
+            if not nombre:
+                nombre = f"Usuario_{direccion[1]}"
+            
+            self.clientes[cliente] = nombre
+            self.log(f"{nombre} conectado desde {direccion[0]}:{direccion[1]}")
+            
+            # Anunciar nuevo usuario
+            cliente.send(f"¡Bienvenido al chat, {nombre}!\n".encode('utf-8'))
+            self.broadcast(f"[SERVIDOR] {nombre} se ha unido al chat", excluir=cliente)
+            
+            # Bucle de mensajes
+            while self.activo:
+                try:
+                    mensaje = cliente.recv(1024).decode('utf-8').strip()
+                    
+                    if not mensaje:
+                        break
+                    
+                    if mensaje.lower() == '/salir':
+                        break
+                    elif mensaje.lower() == '/usuarios':
+                        lista = ", ".join(self.clientes.values())
+                        cliente.send(f"[SERVIDOR] Usuarios conectados: {lista}\n".encode('utf-8'))
+                    elif mensaje.lower() == '/ayuda':
+                        ayuda = """
+Comandos disponibles:
+  /usuarios - Lista usuarios conectados
+  /salir    - Salir del chat
+  /ayuda    - Mostrar esta ayuda
+"""
+                        cliente.send(ayuda.encode('utf-8'))
+                    else:
+                        self.log(f"{nombre}: {mensaje}")
+                        self.broadcast(f"{nombre}: {mensaje}", excluir=cliente)
+                
+                except socket.timeout:
+                    continue
+                except:
+                    break
+        
+        except Exception as e:
+            self.log(f"Error con cliente: {e}")
+        
+        finally:
+            self.desconectar_cliente(cliente)
+    
+    def iniciar(self):
+        """Inicia el servidor de chat."""
+        self.servidor = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.servidor.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        
+        try:
+            self.servidor.bind((self.host, self.puerto))
+            self.servidor.listen(10)
+            self.log(f"Servidor de chat iniciado en {self.host}:{self.puerto}")
+            
+            while self.activo:
+                try:
+                    self.servidor.settimeout(1.0)
+                    cliente, direccion = self.servidor.accept()
+                    cliente.settimeout(60)
+                    
+                    # Crear hilo para el cliente
+                    hilo = threading.Thread(
+                        target=self.manejar_cliente,
+                        args=(cliente, direccion),
+                        daemon=True
+                    )
+                    hilo.start()
+                
+                except socket.timeout:
+                    continue
+                except Exception as e:
+                    if self.activo:
+                        self.log(f"Error aceptando conexión: {e}")
+        
+        except Exception as e:
+            self.log(f"Error del servidor: {e}")
+        finally:
+            self.detener()
+    
+    def detener(self):
+        """Detiene el servidor."""
+        self.activo = False
+        self.broadcast("[SERVIDOR] El servidor se está cerrando...")
+        
+        for cliente in list(self.clientes.keys()):
+            try:
+                cliente.close()
+            except:
+                pass
+        
+        if self.servidor:
+            self.servidor.close()
+        
+        self.log("Servidor detenido")
+
+
+# ========================================
+# CLIENTE DE CHAT
+# ========================================
+
+class ClienteChat:
+    """Cliente de chat TCP."""
+    
+    def __init__(self, host='127.0.0.1', puerto=5555):
+        self.host = host
+        self.puerto = puerto
+        self.socket = None
+        self.activo = True
+    
+    def recibir_mensajes(self):
+        """Hilo para recibir mensajes del servidor."""
+        while self.activo:
+            try:
+                mensaje = self.socket.recv(1024).decode('utf-8')
+                if mensaje:
+                    print(f"\r{mensaje}", end="")
+                    print("> ", end="", flush=True)
+                else:
+                    self.activo = False
+                    break
+            except socket.timeout:
+                continue
+            except:
+                self.activo = False
+                break
+    
+    def conectar(self):
+        """Conecta al servidor de chat."""
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        
+        try:
+            self.socket.connect((self.host, self.puerto))
+            self.socket.settimeout(1.0)
+            print(f"[+] Conectado a {self.host}:{self.puerto}")
+            
+            # Iniciar hilo para recibir mensajes
+            hilo_recibir = threading.Thread(target=self.recibir_mensajes, daemon=True)
+            hilo_recibir.start()
+            
+            # Bucle para enviar mensajes
+            while self.activo:
+                try:
+                    mensaje = input("> ")
+                    if mensaje:
+                        self.socket.send(mensaje.encode('utf-8'))
+                        if mensaje.lower() == '/salir':
+                            break
+                except EOFError:
+                    break
+                except KeyboardInterrupt:
+                    break
+        
+        except ConnectionRefusedError:
+            print(f"[-] No se pudo conectar a {self.host}:{self.puerto}")
+        except Exception as e:
+            print(f"[-] Error: {e}")
+        finally:
+            self.activo = False
+            if self.socket:
+                self.socket.close()
+            print("\n[*] Desconectado")
+
+
+# ========================================
+# MAIN
+# ========================================
+
+def mostrar_uso():
+    """Muestra instrucciones de uso."""
+    print("""
+=== CHAT TCP ===
+
+Uso:
+  python chat.py servidor [puerto]    - Iniciar servidor
+  python chat.py cliente [host] [puerto]  - Conectar como cliente
+
+Ejemplos:
+  python chat.py servidor 5555
+  python chat.py cliente 127.0.0.1 5555
+
+Comandos del chat:
+  /usuarios - Lista usuarios conectados
+  /salir    - Salir del chat
+  /ayuda    - Mostrar ayuda
+""")
+
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        mostrar_uso()
+        sys.exit(1)
+    
+    modo = sys.argv[1].lower()
+    
+    if modo == "servidor":
+        puerto = int(sys.argv[2]) if len(sys.argv) > 2 else 5555
+        servidor = ServidorChat(puerto=puerto)
+        try:
+            servidor.iniciar()
+        except KeyboardInterrupt:
+            print("\n[*] Cerrando servidor...")
+            servidor.detener()
+    
+    elif modo == "cliente":
+        host = sys.argv[2] if len(sys.argv) > 2 else "127.0.0.1"
+        puerto = int(sys.argv[3]) if len(sys.argv) > 3 else 5555
+        cliente = ClienteChat(host=host, puerto=puerto)
+        cliente.conectar()
+    
+    else:
+        mostrar_uso()</code></pre>
+
+    </section>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

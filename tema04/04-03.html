@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SESIÓN 4: Networking y Sockets</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-okaidia.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <div>SESIÓN 4: Networking y Sockets</div>
+    </header>
+
+    <section class="contenido-didactico">
+        <h1>BLOQUE 3: HTTP y Peticiones Web</h1>
+
+        <h2>3.1 Módulo requests: Fundamentos</h2>
+
+        <p>El módulo <code>requests</code> es la biblioteca estándar de facto para realizar peticiones HTTP en Python. Simplifica enormemente el trabajo con APIs y servicios web.</p>
+
+        <pre><code class="language-python">#!/usr/bin/env python3
+"""
+Módulo requests: peticiones HTTP
+"""
+
+import requests
+from pprint import pprint
+
+# ========================================
+# INSTALACIÓN
+# ========================================
+
+# pip install requests
+
+# ========================================
+# PETICIONES GET
+# ========================================
+
+print("=== PETICIONES GET ===\n")
+
+# GET simple
+response = requests.get('https://httpbin.org/get')
+print(f"Status Code: {response.status_code}")
+print(f"URL: {response.url}")
+print(f"Encoding: {response.encoding}")
+
+# Contenido de la respuesta
+print(f"\nContenido (primeros 200 chars):")
+print(response.text[:200])
+
+# Como JSON
+datos = response.json()
+print(f"\nComo JSON:")
+print(f"  Origin: {datos.get('origin')}")
+print(f"  Headers recibidos por servidor: {list(datos.get('headers', {}).keys())}")
+
+# GET con parámetros
+params = {
+    'search': 'python',
+    'page': 1,
+    'limit': 10
+}
+response = requests.get('https://httpbin.org/get', params=params)
+print(f"\nURL con parámetros: {response.url}")
+
+# ========================================
+# PETICIONES POST
+# ========================================
+
+print("\n=== PETICIONES POST ===\n")
+
+# POST con datos de formulario
+data = {
+    'username': 'admin',
+    'password': 'secret123'
+}
+response = requests.post('https://httpbin.org/post', data=data)
+resultado = response.json()
+print(f"Datos enviados (form): {resultado.get('form')}")
+
+# POST con JSON
+json_data = {
+    'name': 'Test User',
+    'email': 'test@example.com',
+    'roles': ['admin', 'user']
+}
+response = requests.post('https://httpbin.org/post', json=json_data)
+resultado = response.json()
+print(f"Datos enviados (json): {resultado.get('json')}")
+
+# ========================================
+# HEADERS
+# ========================================
+
+print("\n=== HEADERS PERSONALIZADOS ===\n")
+
+headers = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+    'Accept': 'application/json',
+    'Authorization': 'Bearer token123',
+    'X-Custom-Header': 'valor-personalizado'
+}
+
+response = requests.get('https://httpbin.org/headers', headers=headers)
+resultado = response.json()
+
+print("Headers enviados:")
+for header, valor in resultado.get('headers', {}).items():
+    print(f"  {header}: {valor[:50]}...")
+
+# Headers de respuesta
+print(f"\nHeaders de respuesta:")
+for header, valor in list(response.headers.items())[:5]:
+    print(f"  {header}: {valor}")
+
+# ========================================
+# COOKIES
+# ========================================
+
+print("\n=== COOKIES ===\n")
+
+# Enviar cookies
+cookies = {
+    'session_id': 'abc123',
+    'user_pref': 'dark_mode'
+}
+response = requests.get('https://httpbin.org/cookies', cookies=cookies)
+print(f"Cookies enviadas: {response.json()}")
+
+# Recibir cookies (usando session)
+session = requests.Session()
+response = session.get('https://httpbin.org/cookies/set/test_cookie/test_value')
+print(f"Cookies en session: {dict(session.cookies)}")
+
+# ========================================
+# AUTENTICACIÓN
+# ========================================
+
+print("\n=== AUTENTICACIÓN ===\n")
+
+# Basic Auth
+response = requests.get(
+    'https://httpbin.org/basic-auth/user/passwd',
+    auth=('user', 'passwd')
+)
+print(f"Basic Auth: {response.status_code} - {response.json()}")
+
+# Bearer Token (ya visto en headers)
+
+# ========================================
+# TIMEOUT Y ERRORES
+# ========================================
+
+print("\n=== MANEJO DE ERRORES ===\n")
+
+# Timeout
+try:
+    response = requests.get('https://httpbin.org/delay/10', timeout=2)
+except requests.exceptions.Timeout:
+    print("[!] Timeout alcanzado")
+
+# Error de conexión
+try:
+    response = requests.get('http://servidor.inexistente.local', timeout=2)
+except requests.exceptions.ConnectionError:
+    print("[!] Error de conexión")
+
+# Verificar status code
+response = requests.get('https://httpbin.org/status/404')
+print(f"Status 404: {response.status_code}")
+
+# Lanzar excepción para status codes de error
+try:
+    response = requests.get('https://httpbin.org/status/500')
+    response.raise_for_status()  # Lanza HTTPError si status >= 400
+except requests.exceptions.HTTPError as e:
+    print(f"[!] HTTP Error: {e}")
+
+# ========================================
+# SESIONES
+# ========================================
+
+print("\n=== SESIONES ===\n")
+
+# Las sesiones mantienen cookies, headers, etc.
+session = requests.Session()
+
+# Configurar headers para toda la sesión
+session.headers.update({
+    'User-Agent': 'SecurityScanner/1.0',
+    'Accept': 'application/json'
+})
+
+# Todas las peticiones usarán estos headers
+response1 = session.get('https://httpbin.org/get')
+response2 = session.get('https://httpbin.org/headers')
+
+print("Sesión mantiene headers y cookies entre peticiones")
+
+# ========================================
+# OTROS MÉTODOS HTTP
+# ========================================
+
+print("\n=== OTROS MÉTODOS HTTP ===\n")
+
+# PUT
+response = requests.put('https://httpbin.org/put', json={'updated': True})
+print(f"PUT: {response.status_code}")
+
+# DELETE
+response = requests.delete('https://httpbin.org/delete')
+print(f"DELETE: {response.status_code}")
+
+# PATCH
+response = requests.patch('https://httpbin.org/patch', json={'partial': 'update'})
+print(f"PATCH: {response.status_code}")
+
+# OPTIONS
+response = requests.options('https://httpbin.org/get')
+print(f"OPTIONS Allow: {response.headers.get('Allow', 'N/A')}")
+
+# HEAD (solo headers, sin body)
+response = requests.head('https://httpbin.org/get')
+print(f"HEAD: {response.status_code}, Content-Length: {response.headers.get('Content-Length')}")</code></pre>
+
+        <h2>3.2 Análisis de Respuestas HTTP</h2>
+
+        <p>El análisis detallado de respuestas HTTP permite identificar tecnologías, configuraciones de seguridad y posibles vulnerabilidades en aplicaciones web.</p>
+
+        <pre><code class="language-python">#!/usr/bin/env python3
+"""
+Análisis detallado de respuestas HTTP
+"""
+
+import requests
+from urllib.parse import urlparse
+import json
+
+# ========================================
+# ANALIZADOR DE RESPUESTAS
+# ========================================
+
+class AnalizadorHTTP:
+    """Analiza respuestas HTTP en detalle."""
+    
+    def __init__(self, timeout=10):
+        self.timeout = timeout
+        self.session = requests.Session()
+        self.session.headers.update({
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        })
+    
+    def analizar_url(self, url):
+        """Analiza una URL y retorna información detallada."""
+        resultado = {
+            'url': url,
+            'accesible': False,
+            'status_code': None,
+            'headers': {},
+            'cookies': {},
+            'redirects': [],
+            'tecnologias': [],
+            'seguridad': {},
+            'errores': []
+        }
+        
+        try:
+            # Petición con seguimiento de redirects
+            response = self.session.get(
+                url,
+                timeout=self.timeout,
+                allow_redirects=True,
+                verify=True
+            )
+            
+            resultado['accesible'] = True
+            resultado['status_code'] = response.status_code
+            resultado['url_final'] = response.url
+            resultado['tiempo_respuesta'] = response.elapsed.total_seconds()
+            
+            # Registrar redirects
+            for r in response.history:
+                resultado['redirects'].append({
+                    'url': r.url,
+                    'status': r.status_code
+                })
+            
+            # Headers
+            resultado['headers'] = dict(response.headers)
+            
+            # Cookies
+            resultado['cookies'] = dict(response.cookies)
+            
+            # Analizar headers de seguridad
+            resultado['seguridad'] = self._analizar_seguridad(response.headers)
+            
+            # Detectar tecnologías
+            resultado['tecnologias'] = self._detectar_tecnologias(response)
+            
+        except requests.exceptions.SSLError as e:
+            resultado['errores'].append(f"SSL Error: {str(e)[:100]}")
+        except requests.exceptions.ConnectionError as e:
+            resultado['errores'].append(f"Connection Error: {str(e)[:100]}")
+        except requests.exceptions.Timeout:
+            resultado['errores'].append("Timeout")
+        except Exception as e:
+            resultado['errores'].append(f"Error: {str(e)[:100]}")
+        
+        return resultado
+    
+    def _analizar_seguridad(self, headers):
+        """Analiza headers de seguridad."""
+        headers_lower = {k.lower(): v for k, v in headers.items()}
+        
+        seguridad = {
+            'headers_presentes': [],
+            'headers_faltantes': [],
+            'puntuacion': 0
+        }
+        
+        # Headers de seguridad importantes
+        headers_seguridad = {
+            'strict-transport-security': 'HSTS - Fuerza HTTPS',
+            'content-security-policy': 'CSP - Política de contenido',
+            'x-frame-options': 'Previene clickjacking',
+            'x-content-type-options': 'Previene MIME sniffing',
+            'x-xss-protection': 'Protección XSS (legacy)',
+            'referrer-policy': 'Control de Referrer',
+            'permissions-policy': 'Política de permisos',
+            'x-permitted-cross-domain-policies': 'Políticas cross-domain',
+        }
+        
+        for header, descripcion in headers_seguridad.items():
+            if header in headers_lower:
+                seguridad['headers_presentes'].append({
+                    'nombre': header,
+                    'descripcion': descripcion,
+                    'valor': headers_lower[header][:100]
+                })
+                seguridad['puntuacion'] += 1
+            else:
+                seguridad['headers_faltantes'].append({
+                    'nombre': header,
+                    'descripcion': descripcion
+                })
+        
+        # Calcular grado
+        total = len(headers_seguridad)
+        presentes = len(seguridad['headers_presentes'])
+        porcentaje = (presentes / total) * 100
+        
+        if porcentaje >= 80:
+            seguridad['grado'] = 'A'
+        elif porcentaje >= 60:
+            seguridad['grado'] = 'B'
+        elif porcentaje >= 40:
+            seguridad['grado'] = 'C'
+        elif porcentaje >= 20:
+            seguridad['grado'] = 'D'
+        else:
+            seguridad['grado'] = 'F'
+        
+        seguridad['porcentaje'] = porcentaje
+        
+        return seguridad
+    
+    def _detectar_tecnologias(self, response):
+        """Detecta tecnologías basándose en headers y contenido."""
+        tecnologias = []
+        headers = {k.lower(): v for k, v in response.headers.items()}
+        
+        # Por Server header
+        if 'server' in headers:
+            server = headers['server']
+            tecnologias.append(f"Server: {server}")
+        
+        # Por X-Powered-By
+        if 'x-powered-by' in headers:
+            tecnologias.append(f"Powered By: {headers['x-powered-by']}")
+        
+        # Por otros headers
+        if 'x-aspnet-version' in headers:
+            tecnologias.append(f"ASP.NET: {headers['x-aspnet-version']}")
+        
+        if 'x-drupal-cache' in headers:
+            tecnologias.append("CMS: Drupal")
+        
+        # Por contenido (básico)
+        content = response.text[:5000].lower()
+        
+        if 'wp-content' in content or 'wordpress' in content:
+            tecnologias.append("CMS: WordPress")
+        elif 'joomla' in content:
+            tecnologias.append("CMS: Joomla")
+        
+        if 'jquery' in content:
+            tecnologias.append("JS: jQuery")
+        if 'bootstrap' in content:
+            tecnologias.append("CSS: Bootstrap")
+        if 'react' in content:
+            tecnologias.append("JS: React")
+        if 'vue' in content:
+            tecnologias.append("JS: Vue.js")
+        
+        return tecnologias
+    
+    def imprimir_analisis(self, resultado):
+        """Imprime el análisis de forma legible."""
+        print(f"\n{'='*60}")
+        print(f"  ANÁLISIS HTTP: {resultado['url']}")
+        print(f"{'='*60}\n")
+        
+        if resultado['accesible']:
+            print(f"[+] Estado: {resultado['status_code']}")
+            print(f"[+] URL Final: {resultado.get('url_final', 'N/A')}")
+            print(f"[+] Tiempo: {resultado.get('tiempo_respuesta', 0):.2f}s")
+            
+            if resultado['redirects']:
+                print(f"\n[*] Redirecciones:")
+                for r in resultado['redirects']:
+                    print(f"    {r['status']} -> {r['url']}")
+            
+            if resultado['tecnologias']:
+                print(f"\n[*] Tecnologías detectadas:")
+                for tech in resultado['tecnologias']:
+                    print(f"    - {tech}")
+            
+            # Seguridad
+            seg = resultado['seguridad']
+            print(f"\n[*] Seguridad: Grado {seg['grado']} ({seg['porcentaje']:.0f}%)")
+            
+            if seg['headers_presentes']:
+                print(f"\n    ✓ Headers presentes:")
+                for h in seg['headers_presentes']:
+                    print(f"      - {h['nombre']}")
+            
+            if seg['headers_faltantes']:
+                print(f"\n    ✗ Headers faltantes:")
+                for h in seg['headers_faltantes'][:5]:
+                    print(f"      - {h['nombre']}: {h['descripcion']}")
+            
+            # Cookies
+            if resultado['cookies']:
+                print(f"\n[*] Cookies ({len(resultado['cookies'])}):")
+                for nombre, valor in list(resultado['cookies'].items())[:5]:
+                    print(f"    - {nombre}: {valor[:30]}...")
+        else:
+            print(f"[-] No accesible")
+            for error in resultado['errores']:
+                print(f"    Error: {error}")
+        
+        print(f"\n{'='*60}")
+
+
+# ========================================
+# DEMOSTRACIÓN
+# ========================================
+
+if __name__ == "__main__":
+    analizador = AnalizadorHTTP()
+    
+    urls_prueba = [
+        'https://www.google.com',
+        'https://github.com',
+        'https://httpbin.org/get',
+    ]
+    
+    for url in urls_prueba:
+        resultado = analizador.analizar_url(url)
+        analizador.imprimir_analisis(resultado)</code></pre>
+
+        <h2>3.3 Web Scraping con BeautifulSoup</h2>
+
+        <p><strong>BeautifulSoup</strong> es una biblioteca de Python para extraer datos de archivos HTML y XML. Es especialmente útil para web scraping y análisis de contenido web.</p>
+
+        <pre><code class="language-python">#!/usr/bin/env python3
+"""
+Web Scraping básico con BeautifulSoup
+"""
+
+import requests
+from bs4 import BeautifulSoup
+import re
+
+# ========================================
+# INSTALACIÓN
+# ========================================
+
+# pip install beautifulsoup4
+# pip install lxml  (parser más rápido, opcional)
+
+# ========================================
+# FUNDAMENTOS DE BEAUTIFULSOUP
+# ========================================
+
+def demo_beautifulsoup():
+    """Demostración de funciones básicas de BeautifulSoup."""
+    
+    # HTML de ejemplo
+    html = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Página de Ejemplo</title>
+        <meta name="author" content="Admin">
+    </head>
+    <body>
+        <div id="header">
+            <h1 class="titulo">Bienvenido</h1>
+            <nav>
+                <a href="/home">Inicio</a>
+                <a href="/about">Acerca</a>
+                <a href="/contact">Contacto</a>
+            </nav>
+        </div>
+        
+        <div id="content">
+            <article class="post">
+                <h2>Primer Post</h2>
+                <p class="meta">Autor: <span class="author">Juan</span></p>
+                <p>Contenido del primer post...</p>
+            </article>
+            
+            <article class="post">
+                <h2>Segundo Post</h2>
+                <p class="meta">Autor: <span class="author">María</span></p>
+                <p>Contenido del segundo post...</p>
+            </article>
+        </div>
+        
+        <form action="/login" method="post">
+            <input type="text" name="username" id="user">
+            <input type="password" name="password" id="pass">
+            <input type="submit" value="Login">
+        </form>
+        
+        <footer>
+            <p>Email: <a href="mailto:admin@example.com">admin@example.com</a></p>
+        </footer>
+    </body>
+    </html>
+    """
+    
+    # Crear objeto BeautifulSoup
+    soup = BeautifulSoup(html, 'html.parser')  # o 'lxml' para más velocidad
+    
+    print("=== BEAUTIFULSOUP FUNDAMENTOS ===\n")
+    
+    # ---- NAVEGACIÓN BÁSICA ----
+    
+    # Título de la página
+    print(f"Título: {soup.title.text}")
+    
+    # Primer elemento de un tipo
+    print(f"Primer <h1>: {soup.h1.text}")
+    print(f"Primer <a>: {soup.a['href']}")
+    
+    # ---- BÚSQUEDA ----
+    
+    # find() - Primer elemento que coincide
+    header = soup.find('div', id='header')
+    print(f"\nDiv con id='header': {header.h1.text}")
+    
+    # find_all() - Todos los elementos
+    links = soup.find_all('a')
+    print(f"\nTodos los links ({len(links)}):")
+    for link in links:
+        print(f"  - {link.get('href')}: {link.text}")
+    
+    # Por clase
+    posts = soup.find_all('article', class_='post')
+    print(f"\nArtículos con class='post': {len(posts)}")
+    
+    # ---- SELECTORES CSS ----
+    
+    print("\n--- SELECTORES CSS ---")
+    
+    # select() usa sintaxis CSS
+    autores = soup.select('span.author')
+    print(f"Autores (span.author): {[a.text for a in autores]}")
+    
+    # Selector más complejo
+    nav_links = soup.select('nav a')
+    print(f"Links en nav: {[a.text for a in nav_links]}")
+    
+    # Por ID
+    content = soup.select_one('#content')
+    print(f"Div #content existe: {content is not None}")
+    
+    # ---- ATRIBUTOS ----
+    
+    print("\n--- ATRIBUTOS ---")
+    
+    # Obtener atributos
+    form = soup.find('form')
+    print(f"Form action: {form.get('action')}")
+    print(f"Form method: {form.get('method')}")
+    
+    # Todos los atributos
+    inputs = soup.find_all('input')
+    for inp in inputs:
+        print(f"  Input: type={inp.get('type')}, name={inp.get('name')}")
+    
+    # ---- TEXTO ----
+    
+    print("\n--- EXTRACCIÓN DE TEXTO ---")
+    
+    # .text - Todo el texto interno
+    primer_post = soup.find('article')
+    print(f"Texto del primer post:\n{primer_post.get_text(strip=True)[:100]}")
+    
+    # .string - Solo si hay un único hijo de texto
+    h1 = soup.find('h1')
+    print(f"String de h1: {h1.string}")
+    
+    # ---- NAVEGACIÓN DEL ÁRBOL ----
+    
+    print("\n--- NAVEGACIÓN ---")
+    
+    articulo = soup.find('article')
+    print(f"Padre de article: {articulo.parent.name}")
+    print(f"Siguiente hermano: {articulo.find_next_sibling('article').h2.text}")
+
+
+# ========================================
+# SCRAPING PRÁCTICO
+# ========================================
+
+def extraer_informacion_web(url):
+    """
+    Extrae información útil de una página web.
+    Útil para reconocimiento en pentesting.
+    """
+    try:
+        response = requests.get(url, timeout=10, headers={
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        })
+        response.raise_for_status()
+    except Exception as e:
+        return {'error': str(e)}
+    
+    soup = BeautifulSoup(response.text, 'html.parser')
+    
+    info = {
+        'url': url,
+        'titulo': None,
+        'meta_tags': {},
+        'links_internos': [],
+        'links_externos': [],
+        'emails': [],
+        'formularios': [],
+        'scripts': [],
+        'comentarios': []
+    }
+    
+    # Título
+    if soup.title:
+        info['titulo'] = soup.title.text.strip()
+    
+    # Meta tags
+    for meta in soup.find_all('meta'):
+        nombre = meta.get('name') or meta.get('property', '')
+        contenido = meta.get('content', '')
+        if nombre and contenido:
+            info['meta_tags'][nombre] = contenido[:200]
+    
+    # Links
+    from urllib.parse import urljoin, urlparse
+    dominio_base = urlparse(url).netloc
+    
+    for link in soup.find_all('a', href=True):
+        href = link['href']
+        href_completo = urljoin(url, href)
+        
+        if urlparse(href_completo).netloc == dominio_base:
+            if href_completo not in info['links_internos']:
+                info['links_internos'].append(href_completo)
+        elif href.startswith('http'):
+            if href not in info['links_externos']:
+                info['links_externos'].append(href)
+    
+    # Emails
+    email_pattern = r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
+    emails = re.findall(email_pattern, response.text)
+    info['emails'] = list(set(emails))
+    
+    # Formularios
+    for form in soup.find_all('form'):
+        form_info = {
+            'action': form.get('action', ''),
+            'method': form.get('method', 'get').upper(),
+            'inputs': []
+        }
+        for inp in form.find_all(['input', 'textarea', 'select']):
+            form_info['inputs'].append({
+                'type': inp.get('type', 'text'),
+                'name': inp.get('name', ''),
+                'id': inp.get('id', '')
+            })
+        info['formularios'].append(form_info)
+    
+    # Scripts externos
+    for script in soup.find_all('script', src=True):
+        src = script['src']
+        if src.startswith('http'):
+            info['scripts'].append(src)
+        else:
+            info['scripts'].append(urljoin(url, src))
+    
+    # Comentarios HTML (pueden contener info sensible)
+    from bs4 import Comment
+    comentarios = soup.find_all(string=lambda text: isinstance(text, Comment))
+    info['comentarios'] = [c.strip()[:200] for c in comentarios if c.strip()]
+    
+    return info
+
+
+def imprimir_info_web(info):
+    """Imprime la información extraída."""
+    print(f"\n{'='*60}")
+    print(f"  INFORMACIÓN EXTRAÍDA: {info.get('url', 'N/A')}")
+    print(f"{'='*60}\n")
+    
+    if 'error' in info:
+        print(f"[-] Error: {info['error']}")
+        return
+    
+    print(f"[+] Título: {info['titulo']}")
+    
+    if info['meta_tags']:
+        print(f"\n[*] Meta Tags importantes:")
+        for nombre in ['description', 'keywords', 'author', 'generator']:
+            if nombre in info['meta_tags']:
+                print(f"    {nombre}: {info['meta_tags'][nombre][:80]}")
+    
+    print(f"\n[*] Links internos: {len(info['links_internos'])}")
+    for link in info['links_internos'][:10]:
+        print(f"    - {link}")
+    
+    print(f"\n[*] Links externos: {len(info['links_externos'])}")
+    for link in info['links_externos'][:5]:
+        print(f"    - {link}")
+    
+    if info['emails']:
+        print(f"\n[*] Emails encontrados: {info['emails']}")
+    
+    if info['formularios']:
+        print(f"\n[*] Formularios ({len(info['formularios'])}):")
+        for form in info['formularios']:
+            print(f"    Form: {form['method']} {form['action']}")
+            for inp in form['inputs'][:5]:
+                print(f"      - {inp['type']}: {inp['name']}")
+    
+    if info['comentarios']:
+        print(f"\n[!] Comentarios HTML ({len(info['comentarios'])}):")
+        for com in info['comentarios'][:3]:
+            print(f"    <!-- {com[:60]}... -->")
+    
+    print(f"\n{'='*60}")
+
+
+# ========================================
+# MAIN
+# ========================================
+
+if __name__ == "__main__":
+    # Demo de fundamentos
+    demo_beautifulsoup()
+    
+    # Ejemplo práctico
+    print("\n" + "="*60)
+    print("  EJEMPLO PRÁCTICO")
+    print("="*60)
+    
+    url = "https://example.com"
+    info = extraer_informacion_web(url)
+    imprimir_info_web(info)</code></pre>
+
+    </section>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
