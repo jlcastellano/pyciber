@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sesión 5: Herramientas y Bibliotecas para Ciberseguridad</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-okaidia.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <div>SESIÓN 5: Herramientas y Bibliotecas para Ciberseguridad</div>
+    </header>
+
+    <section class="contenido-didactico">
+        <h1>BLOQUE 4: Python-Nmap - Integración con Nmap</h1>
+
+        <h2>4.1 Usando Nmap desde Python</h2>
+
+        <p>
+            <strong>Python-Nmap</strong> es una biblioteca que permite integrar la potencia de Nmap con la flexibilidad de Python, facilitando la automatización de escaneos de red y el procesamiento de resultados.
+        </p>
+
+        <details>
+            <summary>Instalación y requisitos</summary>
+            <p>
+                <strong>Instalación de python-nmap:</strong> <code>pip install python-nmap</code>
+            </p>
+            <p>
+                <strong>Requisito previo:</strong> Nmap debe estar instalado en el sistema:
+            </p>
+            <ul>
+                <li><strong>Linux:</strong> <code>sudo apt install nmap</code></li>
+                <li><strong>macOS:</strong> <code>brew install nmap</code></li>
+                <li><strong>Windows:</strong> Descargar desde <a href="https://nmap.org/download.html">https://nmap.org/download.html</a></li>
+            </ul>
+        </details>
+
+        <h3>Capacidades de Python-Nmap</h3>
+
+        <ul>
+            <li>Escaneos de puertos automatizados</li>
+            <li>Detección de servicios y versiones</li>
+            <li>Detección de sistema operativo</li>
+            <li>Ejecución de scripts NSE (Nmap Scripting Engine)</li>
+            <li>Procesamiento estructurado de resultados</li>
+            <li>Exportación a múltiples formatos</li>
+        </ul>
+
+<pre><code class="language-python">#!/usr/bin/env python3
+"""
+Python-Nmap: Integración con Nmap para escaneos avanzados
+
+INSTALACIÓN:
+pip install python-nmap
+
+REQUISITO: Nmap instalado en el sistema
+- Linux: sudo apt install nmap
+- macOS: brew install nmap
+- Windows: https://nmap.org/download.html
+"""
+
+import nmap
+import json
+from datetime import datetime
+
+print("""
+╔═══════════════════════════════════════════════════════════════════╗
+║                    PYTHON-NMAP - ESCANEOS AVANZADOS               ║
+╠═══════════════════════════════════════════════════════════════════╣
+║  Combina el poder de Nmap con la flexibilidad de Python           ║
+║  • Escaneos de puertos                                            ║
+║  • Detección de servicios y versiones                             ║
+║  • Detección de sistema operativo                                 ║
+║  • Scripts NSE (Nmap Scripting Engine)                            ║
+╚═══════════════════════════════════════════════════════════════════╝
+""")
+
+# ========================================
+# CLASE ESCANER NMAP
+# ========================================
+
+class EscanerNmap:
+    """
+    Wrapper para python-nmap con funcionalidades extendidas.
+    """
+    
+    def __init__(self):
+        self.nm = nmap.PortScanner()
+        self.resultados = {}
+    
+    def verificar_nmap(self):
+        """Verifica que Nmap esté instalado."""
+        try:
+            version = self.nm.nmap_version()
+            print(f"[+] Nmap versión: {version[0]}.{version[1]}")
+            return True
+        except nmap.PortScannerError:
+            print("[-] Error: Nmap no está instalado o no está en el PATH")
+            return False
+    
+    # ========================================
+    # TIPOS DE ESCANEO
+    # ========================================
+    
+    def escaneo_rapido(self, objetivo, puertos='1-1000'):
+        """
+        Escaneo rápido TCP connect.
+        Equivalente a: nmap -sT objetivo
+        """
+        print(f"\n[*] Escaneo rápido a {objetivo}")
+        print(f"[*] Puertos: {puertos}")
+        
+        self.nm.scan(objetivo, puertos, arguments='-sT -T4')
+        return self._procesar_resultados(objetivo)
+    
+    def escaneo_syn(self, objetivo, puertos='1-1000'):
+        """
+        Escaneo SYN (stealth). Requiere root.
+        Equivalente a: nmap -sS objetivo
+        """
+        print(f"\n[*] Escaneo SYN a {objetivo}")
+        
+        self.nm.scan(objetivo, puertos, arguments='-sS -T4')
+        return self._procesar_resultados(objetivo)
+    
+    def escaneo_servicios(self, objetivo, puertos='1-1000'):
+        """
+        Detecta versiones de servicios.
+        Equivalente a: nmap -sV objetivo
+        """
+        print(f"\n[*] Escaneo de servicios a {objetivo}")
+        
+        self.nm.scan(objetivo, puertos, arguments='-sV -T4')
+        return self._procesar_resultados(objetivo)
+    
+    def escaneo_os(self, objetivo):
+        """
+        Detecta sistema operativo. Requiere root.
+        Equivalente a: nmap -O objetivo
+        """
+        print(f"\n[*] Detección de OS en {objetivo}")
+        
+        self.nm.scan(objetivo, arguments='-O -T4')
+        return self._procesar_resultados(objetivo)
+    
+    def escaneo_completo(self, objetivo, puertos='1-65535'):
+        """
+        Escaneo completo: puertos + servicios + OS + scripts.
+        Equivalente a: nmap -sS -sV -O -sC objetivo
+        """
+        print(f"\n[*] Escaneo completo a {objetivo}")
+        print("[!] Esto puede tomar varios minutos...")
+        
+        self.nm.scan(objetivo, puertos, arguments='-sS -sV -O -sC -T4')
+        return self._procesar_resultados(objetivo)
+    
+    def escaneo_vuln(self, objetivo):
+        """
+        Escaneo de vulnerabilidades usando scripts NSE.
+        Equivalente a: nmap --script vuln objetivo
+        """
+        print(f"\n[*] Escaneo de vulnerabilidades en {objetivo}")
+        print("[!] Esto puede tomar varios minutos...")
+        
+        self.nm.scan(objetivo, arguments='--script vuln -T4')
+        return self._procesar_resultados(objetivo)
+    
+    def escaneo_udp(self, objetivo, puertos='53,67,68,69,123,161,162'):
+        """
+        Escaneo UDP. Requiere root, es lento.
+        Equivalente a: nmap -sU objetivo
+        """
+        print(f"\n[*] Escaneo UDP a {objetivo}")
+        print(f"[*] Puertos: {puertos}")
+        
+        self.nm.scan(objetivo, puertos, arguments='-sU -T4')
+        return self._procesar_resultados(objetivo)
+    
+    def descubrimiento_red(self, red):
+        """
+        Descubre hosts activos en una red.
+        Equivalente a: nmap -sn 192.168.1.0/24
+        """
+        print(f"\n[*] Descubrimiento de red: {red}")
+        
+        self.nm.scan(hosts=red, arguments='-sn')
+        
+        hosts_activos = []
+        for host in self.nm.all_hosts():
+            if self.nm[host].state() == 'up':
+                hosts_activos.append({
+                    'ip': host,
+                    'hostname': self.nm[host].hostname(),
+                    'state': 'up'
+                })
+        
+        return hosts_activos
+    
+    # ========================================
+    # SCRIPTS NSE ESPECÍFICOS
+    # ========================================
+    
+    def escaneo_smb(self, objetivo):
+        """Escaneo específico para SMB."""
+        print(f"\n[*] Escaneo SMB en {objetivo}")
+        
+        self.nm.scan(objetivo, '445', 
+                    arguments='--script smb-enum-shares,smb-enum-users,smb-os-discovery')
+        return self._procesar_resultados(objetivo)
+    
+    def escaneo_http(self, objetivo, puerto='80'):
+        """Escaneo específico para HTTP."""
+        print(f"\n[*] Escaneo HTTP en {objetivo}:{puerto}")
+        
+        self.nm.scan(objetivo, puerto,
+                    arguments='--script http-title,http-headers,http-methods')
+        return self._procesar_resultados(objetivo)
+    
+    def escaneo_ssh(self, objetivo):
+        """Escaneo específico para SSH."""
+        print(f"\n[*] Escaneo SSH en {objetivo}")
+        
+        self.nm.scan(objetivo, '22',
+                    arguments='--script ssh-hostkey,ssh-auth-methods')
+        return self._procesar_resultados(objetivo)
+    
+    # ========================================
+    # PROCESAMIENTO DE RESULTADOS
+    # ========================================
+    
+    def _procesar_resultados(self, objetivo):
+        """Procesa y estructura los resultados del escaneo."""
+        
+        resultados = {
+            'objetivo': objetivo,
+            'timestamp': datetime.now().isoformat(),
+            'hosts': []
+        }
+        
+        for host in self.nm.all_hosts():
+            info_host = {
+                'ip': host,
+                'hostname': self.nm[host].hostname(),
+                'state': self.nm[host].state(),
+                'protocolos': {}
+            }
+            
+            # Información de OS si está disponible
+            if 'osmatch' in self.nm[host]:
+                os_matches = self.nm[host]['osmatch']
+                if os_matches:
+                    info_host['os'] = {
+                        'nombre': os_matches[0]['name'],
+                        'precision': os_matches[0]['accuracy']
+                    }
+            
+            # Puertos por protocolo
+            for proto in self.nm[host].all_protocols():
+                puertos_info = []
+                
+                for puerto in sorted(self.nm[host][proto].keys()):
+                    puerto_data = self.nm[host][proto][puerto]
+                    puertos_info.append({
+                        'puerto': puerto,
+                        'estado': puerto_data['state'],
+                        'servicio': puerto_data.get('name', ''),
+                        'producto': puerto_data.get('product', ''),
+                        'version': puerto_data.get('version', ''),
+                        'extra': puerto_data.get('extrainfo', ''),
+                        'scripts': puerto_data.get('script', {})
+                    })
+                
+                info_host['protocolos'][proto] = puertos_info
+            
+            resultados['hosts'].append(info_host)
+        
+        self.resultados = resultados
+        return resultados
+    
+    def imprimir_resultados(self, resultados=None):
+        """Imprime resultados de forma legible."""
+        
+        if resultados is None:
+            resultados = self.resultados
+        
+        print(f"\n{'='*60}")
+        print(f"  RESULTADOS DEL ESCANEO")
+        print(f"  {resultados['timestamp']}")
+        print(f"{'='*60}")
+        
+        for host in resultados['hosts']:
+            print(f"\n[HOST] {host['ip']} ({host['hostname']})")
+            print(f"       Estado: {host['state']}")
+            
+            if 'os' in host:
+                print(f"       OS: {host['os']['nombre']} ({host['os']['precision']}% precisión)")
+            
+            for proto, puertos in host['protocolos'].items():
+                print(f"\n  [{proto.upper()}]")
+                print(f"  {'PUERTO':<10} {'ESTADO':<10} {'SERVICIO':<15} {'VERSION'}")
+                print(f"  {'-'*55}")
+                
+                for p in puertos:
+                    version_info = f"{p['producto']} {p['version']}".strip()
+                    print(f"  {p['puerto']:<10} {p['estado']:<10} {p['servicio']:<15} {version_info[:30]}")
+                    
+                    # Mostrar scripts si hay
+                    if p['scripts']:
+                        for script_name, output in p['scripts'].items():
+                            print(f"      └─ {script_name}:")
+                            for linea in output.split('\n')[:3]:
+                                print(f"         {linea[:60]}")
+    
+    def exportar_json(self, archivo):
+        """Exporta resultados a JSON."""
+        with open(archivo, 'w') as f:
+            json.dump(self.resultados, f, indent=2)
+        print(f"[+] Resultados exportados a: {archivo}")
+    
+    def exportar_txt(self, archivo):
+        """Exporta resultados a texto plano."""
+        with open(archivo, 'w') as f:
+            for host in self.resultados['hosts']:
+                f.write(f"Host: {host['ip']} ({host['hostname']})\n")
+                f.write(f"Estado: {host['state']}\n")
+                
+                for proto, puertos in host['protocolos'].items():
+                    f.write(f"\n{proto.upper()} Ports:\n")
+                    for p in puertos:
+                        f.write(f"  {p['puerto']}/{proto} {p['estado']} {p['servicio']}\n")
+                
+                f.write("\n" + "="*50 + "\n")
+        
+        print(f"[+] Resultados exportados a: {archivo}")
+
+
+# ========================================
+# EJEMPLO DE USO
+# ========================================
+
+def demo_nmap():
+    """Demostración de python-nmap."""
+    
+    escaner = EscanerNmap()
+    
+    # Verificar instalación
+    if not escaner.verificar_nmap():
+        return
+    
+    print("\n" + "="*60)
+    print("  DEMO PYTHON-NMAP")
+    print("="*60)
+    
+    objetivo = "scanme.nmap.org"  # Servidor de prueba oficial de Nmap
+    
+    print(f"\n[*] Objetivo de prueba: {objetivo}")
+    print("[*] Este es un servidor oficial de Nmap para pruebas")
+    
+    # Escaneo básico
+    print("\n--- Escaneo rápido (puertos comunes) ---")
+    resultados = escaner.escaneo_rapido(objetivo, puertos='22,80,443,9929,31337')
+    escaner.imprimir_resultados()
+    
+    # Escaneo de servicios
+    print("\n--- Escaneo de servicios ---")
+    resultados = escaner.escaneo_servicios(objetivo, puertos='22,80')
+    escaner.imprimir_resultados()
+    
+    print("\n[*] Demo completada")
+    print("[*] Para escaneos más avanzados (OS, SYN, vuln) se requiere root")
+
+
+if __name__ == "__main__":
+    import sys
+    
+    if len(sys.argv) > 1:
+        objetivo = sys.argv[1]
+        puertos = sys.argv[2] if len(sys.argv) > 2 else '1-1000'
+        
+        escaner = EscanerNmap()
+        if escaner.verificar_nmap():
+            resultados = escaner.escaneo_servicios(objetivo, puertos)
+            escaner.imprimir_resultados()
+    else:
+        demo_nmap()</code></pre>
+
+        <h3>Tipos de escaneo disponibles</h3>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Método</th>
+                    <th>Descripción</th>
+                    <th>Comando Nmap equivalente</th>
+                    <th>Requiere root</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>escaneo_rapido()</code></td>
+                    <td>Escaneo TCP connect básico</td>
+                    <td><code>nmap -sT</code></td>
+                    <td>No</td>
+                </tr>
+                <tr>
+                    <td><code>escaneo_syn()</code></td>
+                    <td>Escaneo SYN (stealth)</td>
+                    <td><code>nmap -sS</code></td>
+                    <td>Sí</td>
+                </tr>
+                <tr>
+                    <td><code>escaneo_servicios()</code></td>
+                    <td>Detección de versiones</td>
+                    <td><code>nmap -sV</code></td>
+                    <td>No</td>
+                </tr>
+                <tr>
+                    <td><code>escaneo_os()</code></td>
+                    <td>Detección de sistema operativo</td>
+                    <td><code>nmap -O</code></td>
+                    <td>Sí</td>
+                </tr>
+                <tr>
+                    <td><code>escaneo_completo()</code></td>
+                    <td>Escaneo exhaustivo</td>
+                    <td><code>nmap -sS -sV -O -sC</code></td>
+                    <td>Sí</td>
+                </tr>
+                <tr>
+                    <td><code>escaneo_vuln()</code></td>
+                    <td>Búsqueda de vulnerabilidades</td>
+                    <td><code>nmap --script vuln</code></td>
+                    <td>No</td>
+                </tr>
+                <tr>
+                    <td><code>escaneo_udp()</code></td>
+                    <td>Escaneo de puertos UDP</td>
+                    <td><code>nmap -sU</code></td>
+                    <td>Sí</td>
+                </tr>
+                <tr>
+                    <td><code>descubrimiento_red()</code></td>
+                    <td>Descubre hosts activos</td>
+                    <td><code>nmap -sn</code></td>
+                    <td>No</td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <script src="script.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js"></script>
+</body>
+</html>                    

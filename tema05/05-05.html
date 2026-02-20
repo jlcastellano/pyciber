@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sesión 5: Herramientas y Bibliotecas para Ciberseguridad</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-okaidia.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <div>SESIÓN 5: Herramientas y Bibliotecas para Ciberseguridad</div>
+    </header>
+
+    <section class="contenido-didactico">
+        <h1>BLOQUE 5: Recursos para Continuar Aprendiendo</h1>
+
+        <h2>5.1 Plataformas CTF y Práctica</h2>
+
+        <p>
+            Los <strong>CTF (Capture The Flag)</strong> son competiciones de ciberseguridad donde se resuelven retos para obtener "banderas" (flags). Son la mejor forma de practicar habilidades de hacking ético.
+        </p>
+
+        <h3>Plataformas para principiantes</h3>
+
+        <dl>
+            <dt>PicoCTF</dt>
+            <dd>
+                <strong>URL:</strong> <a href="https://picoctf.org">https://picoctf.org</a><br>
+                <strong>Nivel:</strong> Principiante<br>
+                <strong>Características:</strong> Ejercicios guiados, múltiples categorías (crypto, forensics, web, binary), ideal para empezar
+            </dd>
+
+            <dt>OverTheWire</dt>
+            <dd>
+                <strong>URL:</strong> <a href="https://overthewire.org">https://overthewire.org</a><br>
+                <strong>Nivel:</strong> Principiante a intermedio<br>
+                <strong>Wargames destacados:</strong>
+                <ul>
+                    <li><strong>Bandit:</strong> Comandos básicos de Linux</li>
+                    <li><strong>Natas:</strong> Vulnerabilidades web</li>
+                    <li><strong>Krypton:</strong> Criptografía</li>
+                </ul>
+            </dd>
+
+            <dt>TryHackMe</dt>
+            <dd>
+                <strong>URL:</strong> <a href="https://tryhackme.com">https://tryhackme.com</a><br>
+                <strong>Nivel:</strong> Todos los niveles<br>
+                <strong>Características:</strong> Rooms guiadas paso a paso, paths de aprendizaje estructurados, máquinas vulnerables en la nube
+            </dd>
+        </dl>
+
+        <h3>Plataformas intermedias y avanzadas</h3>
+
+        <dl>
+            <dt>HackTheBox</dt>
+            <dd>
+                <strong>URL:</strong> <a href="https://hackthebox.eu">https://hackthebox.eu</a><br>
+                <strong>Nivel:</strong> Intermedio a avanzado<br>
+                <strong>Características:</strong> Máquinas realistas, retos de diferentes categorías, comunidad muy activa, Pro Labs para entornos empresariales
+            </dd>
+
+            <dt>VulnHub</dt>
+            <dd>
+                <strong>URL:</strong> <a href="https://vulnhub.com">https://vulnhub.com</a><br>
+                <strong>Nivel:</strong> Intermedio<br>
+                <strong>Características:</strong> Máquinas virtuales descargables, Boot2Root challenges, práctica offline
+            </dd>
+
+            <dt>Root-Me</dt>
+            <dd>
+                <strong>URL:</strong> <a href="https://root-me.org">https://root-me.org</a><br>
+                <strong>Nivel:</strong> Todos los niveles<br>
+                <strong>Características:</strong> Cientos de retos, múltiples categorías, documentación y soluciones disponibles
+            </dd>
+        </dl>
+
+        <h2>5.2 Bibliotecas Python Avanzadas</h2>
+
+        <h3>Análisis de red</h3>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Biblioteca</th>
+                    <th>Descripción</th>
+                    <th>Instalación</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Scapy</strong></td>
+                    <td>Manipulación de paquetes (visto en el curso)</td>
+                    <td><code>pip install scapy</code></td>
+                </tr>
+                <tr>
+                    <td><strong>dpkt</strong></td>
+                    <td>Parsing rápido de paquetes de red</td>
+                    <td><code>pip install dpkt</code></td>
+                </tr>
+                <tr>
+                    <td><strong>pyshark</strong></td>
+                    <td>Wrapper para Wireshark/tshark</td>
+                    <td><code>pip install pyshark</code></td>
+                </tr>
+                <tr>
+                    <td><strong>impacket</strong></td>
+                    <td>Protocolos de red (SMB, MSRPC, etc.)</td>
+                    <td><code>pip install impacket</code></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Explotación web</h3>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Biblioteca</th>
+                    <th>Descripción</th>
+                    <th>Instalación</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>requests</strong></td>
+                    <td>Peticiones HTTP (visto en el curso)</td>
+                    <td><code>pip install requests</code></td>
+                </tr>
+                <tr>
+                    <td><strong>beautifulsoup4</strong></td>
+                    <td>Parsing HTML (visto en el curso)</td>
+                    <td><code>pip install beautifulsoup4</code></td>
+                </tr>
+                <tr>
+                    <td><strong>selenium</strong></td>
+                    <td>Automatización de navegador</td>
+                    <td><code>pip install selenium</code></td>
+                </tr>
+                <tr>
+                    <td><strong>mechanize</strong></td>
+                    <td>Browser programático</td>
+                    <td><code>pip install mechanize</code></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Criptografía</h3>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Biblioteca</th>
+                    <th>Descripción</th>
+                    <th>Instalación</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>cryptography</strong></td>
+                    <td>Cifrado moderno (visto en el curso)</td>
+                    <td><code>pip install cryptography</code></td>
+                </tr>
+                <tr>
+                    <td><strong>pycryptodome</strong></td>
+                    <td>Algoritmos criptográficos</td>
+                    <td><code>pip install pycryptodome</code></td>
+                </tr>
+                <tr>
+                    <td><strong>hashlib</strong></td>
+                    <td>Funciones hash (biblioteca estándar)</td>
+                    <td>Incluida en Python</td>
+                </tr>
+                <tr>
+                    <td><strong>PyJWT</strong></td>
+                    <td>JSON Web Tokens</td>
+                    <td><code>pip install PyJWT</code></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Forense y análisis</h3>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Biblioteca</th>
+                    <th>Descripción</th>
+                    <th>Instalación</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>volatility3</strong></td>
+                    <td>Análisis de memoria</td>
+                    <td><code>pip install volatility3</code></td>
+                </tr>
+                <tr>
+                    <td><strong>python-magic</strong></td>
+                    <td>Identificación de tipos de archivo</td>
+                    <td><code>pip install python-magic</code></td>
+                </tr>
+                <tr>
+                    <td><strong>pefile</strong></td>
+                    <td>Análisis de ejecutables PE (Windows)</td>
+                    <td><code>pip install pefile</code></td>
+                </tr>
+                <tr>
+                    <td><strong>pyelftools</strong></td>
+                    <td>Análisis de ejecutables ELF (Linux)</td>
+                    <td><code>pip install pyelftools</code></td>
+                </tr>
+                <tr>
+                    <td><strong>oletools</strong></td>
+                    <td>Análisis de documentos Office</td>
+                    <td><code>pip install oletools</code></td>
+                </tr>
+            </tbody>
+        </table>
+
+    </section>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <script src="script.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js"></script>
+</body>
+</html>                    

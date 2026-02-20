@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sesión 5: Herramientas y Bibliotecas para Ciberseguridad</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-okaidia.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <div>SESIÓN 5: Herramientas y Bibliotecas para Ciberseguridad</div>
+    </header>
+
+    <section class="contenido-didactico">
+        <h1>BLOQUE 6: Resumen Final</h1>
+
+        <h2>Cheatsheet Final del Curso</h2>
+
+<pre><code class="language-python">#!/usr/bin/env python3
+"""
+CHEATSHEET: Python para Ciberseguridad
+Referencia rápida de todo el curso
+"""
+
+# ===============================
+# REDES Y SOCKETS
+# ===============================
+
+import socket
+
+# Cliente TCP
+sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+sock.settimeout(5)
+sock.connect(('host', puerto))
+sock.send(b'datos')
+respuesta = sock.recv(1024)
+sock.close()
+
+# Servidor TCP
+servidor = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+servidor.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+servidor.bind(('0.0.0.0', puerto))
+servidor.listen(5)
+cliente, addr = servidor.accept()
+
+# Resolución DNS
+ip = socket.gethostbyname('dominio.com')
+
+# ===============================
+# HTTP Y WEB
+# ===============================
+
+import requests
+from bs4 import BeautifulSoup
+
+# Peticiones HTTP
+r = requests.get(url, headers={}, cookies={}, timeout=10)
+r = requests.post(url, data={}, json={}, auth=('user', 'pass'))
+
+# Análisis HTML
+soup = BeautifulSoup(r.text, 'html.parser')
+links = soup.find_all('a', href=True)
+forms = soup.select('form')
+
+# ===============================
+# SCAPY
+# ===============================
+
+from scapy.all import *
+
+# Construcción de paquetes
+pkt = IP(dst='8.8.8.8')/TCP(dport=80, flags='S')
+pkt = IP(dst='8.8.8.8')/ICMP()
+
+# Envío
+send(pkt)  # Capa 3
+sendp(pkt) # Capa 2
+resp = sr1(pkt, timeout=2, verbose=0)  # Enviar y recibir uno
+
+# Escaneo ARP
+ans, unans = srp(Ether(dst="ff:ff:ff:ff:ff:ff")/ARP(pdst="192.168.1.0/24"), timeout=2)
+
+# Sniffing
+packets = sniff(filter="tcp port 80", count=10, prn=lambda x: x.summary())
+
+# ===============================
+# PARAMIKO (SSH)
+# ===============================
+
+import paramiko
+
+cliente = paramiko.SSHClient()
+cliente.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+cliente.connect('host', username='user', password='pass')
+
+stdin, stdout, stderr = cliente.exec_command('comando')
+output = stdout.read().decode()
+
+sftp = cliente.open_sftp()
+sftp.put('local', 'remoto')
+sftp.get('remoto', 'local')
+
+cliente.close()
+
+# ===============================
+# CRIPTOGRAFÍA
+# ===============================
+
+import hashlib
+from cryptography.fernet import Fernet
+
+# Hashing
+hash_obj = hashlib.sha256(b'data')
+digest = hash_obj.hexdigest()
+
+# Hash de archivo
+with open('file', 'rb') as f:
+    h = hashlib.sha256()
+    for chunk in iter(lambda: f.read(8192), b''):
+        h.update(chunk)
+
+# Cifrado Fernet
+key = Fernet.generate_key()
+f = Fernet(key)
+encrypted = f.encrypt(b'mensaje')
+decrypted = f.decrypt(encrypted)
+
+# ===============================
+# PYTHON-NMAP
+# ===============================
+
+import nmap
+
+nm = nmap.PortScanner()
+nm.scan('host', '1-1000', arguments='-sV')
+
+for host in nm.all_hosts():
+    for proto in nm[host].all_protocols():
+        for port in nm[host][proto].keys():
+            state = nm[host][proto][port]['state']
+            service = nm[host][proto][port]['name']
+
+# ===============================
+# MULTITHREADING
+# ===============================
+
+import threading
+from concurrent.futures import ThreadPoolExecutor
+
+# ThreadPoolExecutor
+with ThreadPoolExecutor(max_workers=100) as executor:
+    futures = [executor.submit(funcion, arg) for arg in lista]
+    for future in futures:
+        resultado = future.result()
+
+# ===============================
+# ARCHIVOS Y ENCODING
+# ===============================
+
+import base64
+import json
+
+# Base64
+encoded = base64.b64encode(b'data')
+decoded = base64.b64decode(encoded)
+
+# JSON
+data = json.loads(json_string)
+json_string = json.dumps(data, indent=2)
+
+# Archivos binarios
+with open('file', 'rb') as f:
+    content = f.read()
+
+# ===============================
+# EXPRESIONES REGULARES
+# ===============================
+
+import re
+
+# Búsqueda
+match = re.search(r'patrón', texto)
+matches = re.findall(r'patrón', texto)
+
+# Patrones comunes
+ip_pattern = r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}'
+email_pattern = r'[\w.-]+@[\w.-]+\.\w+'
+url_pattern = r'https?://[^\s]+'
+
+# ===============================
+# UTILIDADES
+# ===============================
+
+import os
+import sys
+import subprocess
+from datetime import datetime
+
+# Comandos del sistema
+result = subprocess.run(['comando', 'arg'], capture_output=True, text=True)
+output = result.stdout
+
+# Variables de entorno
+value = os.environ.get('VAR', 'default')
+
+# Argumentos de línea de comandos
+args = sys.argv[1:]</code></pre>
+
+    </section>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <script src="script.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js"></script>
+</body>
+</html>                    
